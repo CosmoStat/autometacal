@@ -1,6 +1,7 @@
 import galsim
 import tensorflow as tf
 import tensorflow_datasets as tfds
+import numpy as np
 
 _CITATION = r"""
 @misc{autometacal2021,
@@ -83,7 +84,7 @@ class GalGen(tfds.core.GeneratorBasedBuilder):
     def _split_generators(self, cat,train_split=.7):
         """Returns SplitGenerators."""
         data = Table.read(cat)[_INPUTS]
-        
+
         #split into two tables, randomly picking the train_slice, and others go to test
         intsplit = int(np.round(len(data)*train_split))
         train_slice = np.random.choice(np.arange(len(data)),intsplit,replace=False)
