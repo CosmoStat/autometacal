@@ -3,7 +3,7 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 
 _CITATION = r"""
-@misc{Dua:2019 ,
+@misc{autometacal2021,
 author = "VLRG",
 year = "2017",
 title = "CosmoStat",
