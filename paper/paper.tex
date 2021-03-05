@@ -57,6 +57,9 @@
 % overwriting existing commands. Example:
 %\newcommand{\pcm}{\,cm$^{-2}$}	% per cm-squared
 
+
+\newcommand{\FL}[1]{{\bf \color{blue} [FL: #1]}}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%% TITLE PAGE %%%%%%%%%%%%%%%%%%%
@@ -117,7 +120,7 @@ One issue encountered when trying to transpose classical galaxy image fitting al
 
 A naive approach consists in \textit{unrolling} the optimization algorithm loop, which directly allows for back-propagation through the (potentially many) iterations of the algorithm. This approach has several limitations, in particular it's memory requirement is proportional to the number of iterations steps, and stability issues can appear when the number of steps is large.
 
-In this work, we propose to obtain the gradients of all optimization tasks needed in the pipeline using the implicit function theorem \citep{Kranz2002}. This approach has gained in popularity in the machine learning community recently in the context of Deep Equilibrium Model which introduce the concept of implicit neural network layers, the output of which are defined as a fixed-point of a parametric function.
+In this work, we propose to obtain the gradients of all optimization tasks needed in the pipeline using the implicit function theorem \citep{Kranz2002}. This approach has gained in popularity in the machine learning community recently in the context of Deep Equilibrium Models which introduce the concept of implicit neural network layers, the output of which are defined as a fixed-point of a parametric function.
 
 Let us consider the following optimization problem corresponding to a generic fitting procedure :
 \begin{equation}
@@ -132,7 +135,8 @@ In which case we can define the solution as a fixed point of the following funct
 \begin{equation}
 	f(\theta) = \theta -  \lambda \nabla \mathcal{L}(x, \theta)
 \end{equation}
- 
+
+\FL{TODO: finish describing implicit autodiff, a good example of such a description is maybe in here http://proceedings.mlr.press/v119/bertrand20a/bertrand20a.pdf}
 
 
 \section{Results}
