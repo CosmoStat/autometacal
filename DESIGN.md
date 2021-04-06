@@ -1,0 +1,3 @@
+# Design document for AutoMetaCal
+
+## 
