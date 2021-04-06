@@ -1,0 +1,183 @@
+import tensorflow as tf
+import tensorflow_probability as tfp
+tfd = tfp.distributions
+tfb = tfp.bijectors
+import numpy as np
+
+import galflow as gf
+
+def fit_multivariate_gaussian(image, pixel_scale, update_params=None):
+  """
+  image: target image to fit
+  update_params: dict
+                 'GD': {step_size}
+  shape_image: (N,M)
+
+  return: z_star, ellipticities, flux, radius
+  """
+
+  # Flux
+  flux = tf.reduce_sum(image)
+
+  image = image / flux * 2.
+
+  (N, M) = image.shape
+  coords = tf.stack(tf.meshgrid(tf.range(-N/2,N/2), tf.range(-M/2,M/2)), axis=-1).numpy()
+
+  def model_(tril_params):
+    b = tfb.FillScaleTriL(diag_bijector=tfb.Softplus(),
+                          diag_shift=None)
+    dist = tfd.MultivariateNormalTriL(loc=[0.,0.],
+                                      scale_tril=b.forward(x=tril_params)
+                                      )
+    return dist.prob(coords)
+
+  params = tf.ones(3)*5
+  x = model_(params)
+
+  loss = lambda x, p: tf.reduce_sum((x - model_(p))**2)
+
+  lr = update_params['lr']
+  def f(x, z):
+    with tf.GradientTape() as g:
+      g.watch(z)
+      l = loss(x, z)
+    grad = g.gradient(l, z)
+    return z - lr * grad
+
+  # Implicit fixed point layer
+  @tf.custom_gradient
+  def fixed_point_layer_implicit(im):
+    """
+    return the optimal parameters z_star of the fit
+    and gradient of z w.r.t. the input image computed using the implicit function theorem
+    """
+    # Find the fixed point
+    params = tf.ones(3)
+    z_star = fwd_solver(lambda z: f(im, z), params)
+    z_star1 = tf.identity(z_star)
+
+    # Comput the custom gradient
+    with tf.GradientTape() as tape1:
+      tape1.watch(z_star)
+      f_star = f(im, z_star)
+    g1 = tape1.jacobian(f_star, z_star)
+
+    with tf.GradientTape() as tape0:
+      tape0.watch(im)
+      f_star = f(im, z_star1)
+    g0 = tape0.jacobian(f_star, im)
+
+    def grad(upstream):
+      dz_da = tf.tensordot(tf.linalg.inv(tf.eye(3) - g1), g0, axes=1)
+      return tf.tensordot(upstream, dz_da, axes=1)
+
+    return z_star, grad
+
+  # Fitting
+  z_star = fixed_point_layer_implicit(image)
+
+  # Ellipticity
+  ellipticities = get_ellipticity(z_star)
+
+  # Radius
+  mod = model_(z_star)
+  g1 = tf.reshape(tf.convert_to_tensor(ellipticities[0], dtype=tf.float32), [-1])
+  g2 = tf.reshape(tf.convert_to_tensor(ellipticities[1], dtype=tf.float32), [-1])
+  mod = tf.reshape(tf.convert_to_tensor(mod, dtype=tf.float32), [1,N,M,1])
+  unsheared = gf.shear(mod, -g1, -g2)
+
+  radius = tf.math.sqrt(1. / np.pi / tf.reduce_max(unsheared)/2) * pixel_scale
+
+  return z_star, ellipticities, flux, radius
+
+
+@tf.function()
+def fwd_solver(f, z_init):
+  """
+  forward solver of f(z) = z
+  using XLA
+  """
+  def cond_fun(z_prev, z):
+    #z_prev, z = carry
+    return tf.less(tf.constant(1e-5), tf.norm(z_prev - z))
+
+  def body_fun(z_prev, z):
+    #_, z = carry
+    return z, f(z)
+
+  _, z_star = tf.while_loop(cond_fun, body_fun, loop_vars=[z_init, f(z_init)], maximum_iterations=int(1e5))
+  return z_star
+
+
+@tf.custom_gradient
+def fixed_point_layer_implicit(im):
+  """
+  return the optimal parameters z_star of the fit
+  and gradient of z w.r.t. the input image computed using the implicit function theorem
+  """
+  # Find the fixed point
+  params = tf.ones(3)
+  z_star = fwd_solver(lambda z: f(im, z), params)
+  z_star1 = tf.identity(z_star)
+
+  # Comput the custom gradient
+  with tf.GradientTape() as tape1:
+    tape1.watch(z_star)
+    f_star = f(im, z_star)
+  g1 = tape1.jacobian(f_star, z_star)
+
+  with tf.GradientTape() as tape0:
+    tape0.watch(im)
+    f_star = f(im, z_star1)
+  g0 = tape0.jacobian(f_star, im)
+
+  def grad(upstream):
+    dz_da = tf.tensordot(tf.linalg.inv(tf.eye(3) - g1), g0, axes=1)
+    return tf.tensordot(upstream, dz_da, axes=1)
+
+  return z_star, grad
+
+
+
+def get_ellipticity(scale_tril):
+  """
+  Compte the ellipticity of a 2-dimensional multivariate Gaussian
+  input: coefficient of a 2x2 triangular matrix (shape (3,1))
+  output: e1, e2 (shape (2,1))
+  """
+
+  b = tfb.FillScaleTriL(
+        diag_bijector=tfb.Softplus(),
+        diag_shift=None)
+
+  dist = tfd.MultivariateNormalTriL(loc=[0., 0.], scale_tril=b.forward(scale_tril))
+
+  cov = dist.covariance()
+  w, v = tf.linalg.eigh(cov)
+  w = tf.math.real(w)
+  v = tf.math.real(v)
+
+  x_vec = tf.constant([1., 0.])
+  cosrotation = tf.tensordot(tf.transpose(x_vec), v[:,1], axes=1)/tf.norm(x_vec)/tf.norm(v[:,1])
+  rotation = tf.math.acos(cosrotation)
+  R = tf.convert_to_tensor([[tf.math.sin(rotation), tf.math.cos(rotation)],
+                            [-tf.math.cos(rotation), tf.math.sin(rotation)]]
+                            )
+
+  r = 10
+  x = tf.math.sqrt(r * w[0]) # x-radius
+  y = tf.math.sqrt(r * w[1]) # y-radius
+
+  if x <= y:
+    b = x
+    a = y
+  else:
+    b = y
+    a = x
+
+  e_mod = (1-b/a)/(1+b/a)
+  e1 = e_mod*tf.math.cos(2*rotation)
+  e2 = e_mod*tf.math.sin(2*rotation)
+
+  return tf.convert_to_tensor([tf.math.abs(e1), tf.math.abs(e2)])
