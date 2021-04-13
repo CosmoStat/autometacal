@@ -41,7 +41,7 @@ def test_fitting_flux():
   """
   This test generates a simple galaxy light profile with GalSim, shears it,
   then estimate its flux and shape and checks that it recovers the right
-  parameters.
+  flux.
   """
 
   assert_allclose(gal_flux, flux, rtol=1e-1)
@@ -50,7 +50,7 @@ def test_fitting_shape():
   """
   This test generates a simple galaxy light profile with GalSim, shears it,
   then estimate its flux and shape and checks that it recovers the right
-  parameters.
+  shapes (e1,e2).
   """
 
   assert_allclose(np.array([g1,g2]), e, rtol=1e-2)
