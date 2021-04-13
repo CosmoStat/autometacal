@@ -34,8 +34,9 @@ class GalGen(tfds.core.GeneratorBasedBuilder):
 
   def _generate_examples(self):
     """Yields examples."""
-    for i in range(100000):
-      np.random.seed(31415)
+    np.random.seed(31415)
+    
+    for i in range(100000):      
       g1,g2 , image = generate_galaxy()
       label = np.array([g1,g2]).astype("float32")
 
