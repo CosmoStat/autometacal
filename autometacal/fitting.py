@@ -30,24 +30,34 @@ def fit_multivariate_gaussian(image, pixel_scale, update_params=None):
   (N, M) = image.shape
   coords = tf.stack(tf.meshgrid(tf.range(-N/2,N/2), tf.range(-M/2,M/2)), axis=-1).numpy()
 
-  def model_(tril_params):
+  def model_(params):
+    """
+    Args:
+        A: amplitude
+        tril_params: triangular covariance matrix parameters
+    Returns:
+        image model
+    """
+    A = params[0]
+    tril_params = params[1:]
+
     b = tfb.FillScaleTriL(diag_bijector=tfb.Softplus(),
                           diag_shift=None)
     dist = tfd.MultivariateNormalTriL(loc=[0.,0.],
                                       scale_tril=b.forward(x=tril_params)
                                       )
-    return dist.prob(coords)
+    return A * dist.prob(coords)
 
-  params = tf.ones(3)*5
-  x = model_(params)
+  #params = tf.ones(3)*5
+  #x = model_(flux, params)
 
-  loss = lambda x, p: tf.reduce_sum((x - model_(p))**2)
+  loss = lambda im, p: tf.reduce_sum((im - model_(p))**2)
 
   lr = update_params['lr']
-  def f(x, z):
+  def f(im, z):
     with tf.GradientTape() as g:
       g.watch(z)
-      l = loss(x, z)
+      l = loss(im, z)
     grad = g.gradient(l, z)
     return z - lr * grad
 
@@ -66,7 +76,8 @@ def fit_multivariate_gaussian(image, pixel_scale, update_params=None):
         grad: gradient of z_star w.r.t. im
     """
     # Find the fixed point
-    params = tf.ones(3)
+    params = tf.ones(4)
+
     z_star = fwd_solver(lambda z: f(im, z), params)
     z_star1 = tf.identity(z_star)
 
@@ -82,7 +93,7 @@ def fit_multivariate_gaussian(image, pixel_scale, update_params=None):
     g0 = tape0.jacobian(f_star, im)
 
     def grad(upstream):
-      dz_da = tf.tensordot(tf.linalg.inv(tf.eye(3) - g1), g0, axes=1)
+      dz_da = tf.tensordot(tf.linalg.inv(tf.eye(4) - g1), g0, axes=1)
       return tf.tensordot(upstream, dz_da, axes=1)
 
     return z_star, grad
@@ -91,7 +102,7 @@ def fit_multivariate_gaussian(image, pixel_scale, update_params=None):
   z_star = fixed_point_layer_implicit(image)
 
   # Ellipticity
-  ellipticities = get_ellipticity(z_star)
+  ellipticities = get_ellipticity(z_star[1:])
 
   # Radius
   mod = model_(z_star)
@@ -134,14 +145,10 @@ def get_ellipticity(scale_tril):
 
   Args:
       scale_tril: 3 coefficients of a 2x2 triangular matrix
-      
+
   Returns:
       [e1, e2]: ellipticity parameters
   """
-
-  output: e1, e2 (shape (2,1))
-  """
-
   b = tfb.FillScaleTriL(
         diag_bijector=tfb.Softplus(),
         diag_shift=None)
