@@ -99,8 +99,10 @@ def fit_multivariate_gaussian(image, pixel_scale, update_params=None):
     return z_star, grad
 
   # Fitting
+  print('fitting...')
   z_star = fixed_point_layer_implicit(image)
-
+  print('done.')
+  
   # Ellipticity
   ellipticities = get_ellipticity(z_star[1:])
 
