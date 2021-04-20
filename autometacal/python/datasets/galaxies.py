@@ -2,7 +2,7 @@ import galsim
 from scipy.stats import truncnorm
 
 
-def generate_galaxy(psf = moffat_psf(0.01,-0.02),**kwargs):
+def generate_galaxy(**kwargs):
   "random galaxy generator"
 
   defaults = {'re_mean' : 3.0,

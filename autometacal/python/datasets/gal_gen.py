@@ -3,7 +3,7 @@ import tensorflow_datasets as tfds
 import tensorflow as tf
 import numpy as np
 import galsim
-from galaxies import generate_galaxy
+from .galaxies import generate_galaxy
 _DESCRIPTION = "This tfds generates random galaxy stamps."
 _CITATION = "{NEEDED}"
 _URL = "https://github.com/andrevitorelli/TenGU/"
@@ -39,7 +39,6 @@ class GalGen(tfds.core.GeneratorBasedBuilder):
     for i in range(100000):      
       g1,g2 , image = generate_galaxy()
       label = np.array([g1,g2]).astype("float32")
-
 
       yield '%d'%i, {'image': image.astype("float32"),
                      'label': label }
