@@ -11,7 +11,7 @@ def fit_multivariate_gaussian(image, pixel_scale, update_params=None):
   Estimate galaxy parameters by fitting a multivariate gaussian
 
   Args:
-      image: galaxy image to fit
+      image: galaxy image to fit (numpy array)
       pixel_scale
       update_params: dictionary of optimizer parameters ex: {'lr': .1}
 
@@ -102,7 +102,7 @@ def fit_multivariate_gaussian(image, pixel_scale, update_params=None):
   print('fitting...')
   z_star = fixed_point_layer_implicit(image)
   print('done.')
-  
+
   # Ellipticity
   ellipticities = get_ellipticity(z_star[1:])
 

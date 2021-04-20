@@ -10,8 +10,8 @@ from autometacal.python import fitting
 
 # Some parameters used for testing shearing transforms
 N = 100
-gal_flux = 2.5    # counts
-gal_r0 = 1.7      # arcsec
+gal_flux = 2.5     # counts
+gal_sigma = 1.7    # arcsec
 g1 = 0.2           #
 g2 = 0.3           #
 pixel_scale = 0.2  # arcsec / pixel
@@ -23,20 +23,16 @@ def test_fitting():
   flux and shapes (e1,e2).
   """
 
-  gal = galsim.Exponential(flux=gal_flux, scale_radius=gal_r0)
-  # To make sure that GalSim is not cheating, i.e. using the analytic formula of the light profile
-  # when computing the affine transformation, it might be a good idea to instantiate the image as
-  # an interpolated image.
-  # We also make sure GalSim is using the same kind of interpolation as us (bilinear for TF)
-  reference_image = gal.drawImage(nx=N,ny=N, scale=pixel_scale)
-  gal = galsim.InterpolatedImage(reference_image,
-                                 x_interpolant='linear')
+  # Ceate a Galsim Gaussian profile
+
+  #gal = galsim.Exponential(flux=gal_flux, scale_radius=gal_r0)
+  gal = galsim.Gaussian(flux=gal_flux, sigma=gal_sigma)
 
   # Apply shear with Galsim
   gal = gal.shear(g1=g1, g2=g2)
 
   # Draw the image with Galsim
-  image_galsim = gal.drawImage(nx=N,ny=N,scale=pixel_scale,method='no_pixel').array
+  image_galsim = gal.drawImage(nx=N,ny=N,scale=pixel_scale,method='auto').array
 
   # Estimate flux and shape (e1,e2) with model fitting
   ##############################
@@ -44,5 +40,8 @@ def test_fitting():
                                                     pixel_scale,
                                                     update_params={'lr':30.})
 
-  assert_allclose(gal_flux, flux, rtol=1e-1)
+  assert_allclose(gal_flux, flux, rtol=1e-2)
   assert_allclose(np.array([g1,g2]), e, rtol=1e-2)
+
+if __name__=='__main__':
+    test_fitting()
