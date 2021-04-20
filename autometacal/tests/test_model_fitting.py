@@ -16,7 +16,7 @@ g1 = 0.2           #
 g2 = 0.3           #
 pixel_scale = 0.2  # arcsec / pixel
 
-def test_fitting_flux():
+def test_fitting():
   """
   This test generates a simple galaxy light profile with GalSim, shears it,
   then estimate its flux and shape and checks that it recovers the right
