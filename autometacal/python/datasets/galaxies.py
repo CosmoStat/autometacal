@@ -1,14 +1,28 @@
 import galsim
-from scipy.stats import truncnorm
+from scipy.stats import truncnorm, uniform
 
 
 def generate_galaxy(**kwargs):
-  "random galaxy generator"
+  """ Random Galaxy Generator
+  Generates noiseless galaxy images with a simple light profile. The resulting image is before the convolution with a PSF. 
+  Galaxy shapes follow a bivariate normal distribution centered in zero.
+  
+  Args:
+    g_range: galaxy shapes go from -g_range and + g_range in each g1, g2 
+    g_scatter: galaxy shapes scatter
+    flux: galaxy flux (counts)
+    pixel_scale: intended pixel scale in arcsec^2/pixel
+    stamp_size: size in pixels of the NxN resulting image
+    method: galsim drawing method
+    interpolator: galsim interpolation used to draw the image on the pixel grid.
+  Returns:
+    g1, g2: galaxy shape parameters
+    gal_image.array: numpy array that represents galaxy image
+  
+  """
 
-  defaults = {'re_mean' : 3.0,
-              're_scatter' : 0.1,
-              'g_range' : [-.6,-6],
-              'g_rms' : 0.3,
+  defaults = {'g_range' : 0.6,
+              'g_scatter' : 0.3,
               'flux' : 1,
               'pixel_scale' : 0.2,
               'stamp_size' : 50,
@@ -16,10 +30,12 @@ def generate_galaxy(**kwargs):
               'interpolator' : "linear"}
 
   defaults.update(kwargs)
+  
+  a, b = (-defaults['g_range'] - 0) / defaults['g_scatter'], (defaults['g_range'] - 0) / defaults['g_scatter']
 
-  g1 = truncnorm.rvs(-.6, .6, loc=0, scale=0.2)
-  g2 = truncnorm.rvs(-.6, .6, loc=0, scale=0.2)
-  re = truncnorm.rvs(.5, 5, loc=3, scale=0.2)
+  g1 = truncnorm.rvs(a, b, loc=0, scale=0.2)
+  g2 = truncnorm.rvs(a, b, loc=0, scale=0.2)
+  re = uniform.rvs(.5, 5)
 
   gal = galsim.Exponential(flux=defaults['flux'] ,
                            half_light_radius=re)
