@@ -3,10 +3,11 @@ import tensorflow_datasets as tfds
 import tensorflow as tf
 import numpy as np
 import galsim
-from .galaxies import generate_galaxy
-_DESCRIPTION = "This tfds generates random galaxy stamps."
+from .galaxies import gs_generate_images, gs_drawKimage
+
+_DESCRIPTION = "This tfds generates random toy-model galaxy stamps."
 _CITATION = "{NEEDED}"
-_URL = "https://github.com/andrevitorelli/TenGU/"
+_URL = "https://github.com/CosmoStat/autometacal"
 
 class GalGenConfig(tfds.core.BuilderConfig):
   """BuilderConfig for GalGen."""
@@ -31,23 +32,21 @@ class GalGenConfig(tfds.core.BuilderConfig):
     self.stamp_size = stamp_size
     self.pixel_scale = pixel_scale
     self.flux = flux
+    self.k_padding = 1
+    self.k_interp = 2
 
 
 class GalGen(tfds.core.GeneratorBasedBuilder):
   """Random galaxy image generator."""
 
-  MANUAL_DOWNLOAD_INSTRUCTIONS = """\
-  manual_dir should contain multiple tar files with images (GalGen-50-0.20-1.00,
-  GalGen-100-0.20-1.00 .. GalGen-50-0.20-1.55).
-  Detailed instructions are here:
-  https://github.com/tkarras/progressive_growing_of_gans#preparing-datasets-for-training
+  MANUAL_DOWNLOAD_INSTRUCTIONS = """\ 
+  Nothing to download. DataSet is generated at first call.
   """
 
   BUILDER_CONFIGS = [
-      GalGenConfig(name='variant1', stamp_size=50, pixel_scale=.2, flux=1.),
-      GalGenConfig(name='variant2', stamp_size=100, pixel_scale=.2, flux=1.55),
-      
-  ]
+      GalGenConfig(name='variant1', stamp_size=50, pixel_scale=.2, flux=1e5),
+      GalGenConfig(name='variant2', stamp_size=100, pixel_scale=.2, flux=1e5),
+   ]
 
   VERSION = tfds.core.Version('0.0.1')
   RELEASE_NOTES = {'0.0.1': "Basic functionalities."}
@@ -59,12 +58,21 @@ class GalGen(tfds.core.GeneratorBasedBuilder):
       description=_DESCRIPTION,
       homepage=_URL,
       features=tfds.features.FeaturesDict({
-          'image': tfds.features.Tensor(shape=[self.builder_config.stamp_size,
-                                               self.builder_config.stamp_size],
+          'gal_image': tfds.features.Tensor(shape=[self.builder_config.stamp_size,
+                                                   self.builder_config.stamp_size],
+                                        dtype=tf.float32),
+          'gal_kimage': tfds.features.Tensor(shape=[2, self.builder_config.k_padding*self.builder_config.k_interp*self.builder_config.stamp_size,
+                                                       self.builder_config.k_padding*self.builder_config.k_interp*self.builder_config.stamp_size],
+                                        dtype=tf.float32),
+          'psf_image': tfds.features.Tensor(shape=[self.builder_config.stamp_size,
+                                                   self.builder_config.stamp_size],
+                                        dtype=tf.float32),
+          'psf_kimage': tfds.features.Tensor(shape=[2,self.builder_config.k_padding*self.builder_config.k_interp*self.builder_config.stamp_size,
+                                                      self.builder_config.k_padding*self.builder_config.k_interp*self.builder_config.stamp_size],
                                         dtype=tf.float32),
           'label': tfds.features.Tensor(shape=[2], dtype=tf.float32)
           }),
-      supervised_keys=("image","label"),
+      supervised_keys=("gal_image","label"),
    citation=_CITATION)
 
   def _split_generators(self,dl):
@@ -78,11 +86,26 @@ class GalGen(tfds.core.GeneratorBasedBuilder):
     np.random.seed(31415)
 
     for i in range(100000):
-      g1,g2 , image = generate_galaxy(stamp_size=stamp_size,
-                                      pixel_scale=pixel_scale,
-                                      flux=flux)
+      
+      label, gal_img, psf_img, gal_kimg, psf_kimg = gs_generate_images()
+      
+      #TODO: code to get NxN complex array to NxNx2 real array
+      
+      gal_kimg = decomplexify(gal_kimg.numpy())
+      psf_kimg = decomplexify(psf_kimg.numpy())
 
-      label = np.array([g1,g2]).astype("float32")
 
-      yield '%d'%i, {'image': image.astype("float32"),
-                     'label': label }
+
+      yield '%d'%i, {'gal_image': gal_img.numpy(),
+                     'gal_kimage': gal_kimg,
+                     'psf_image': psf_img.numpy(),
+                     'psf_kimage': psf_kimg,
+                     'label': label.numpy() }
+
+
+def decomplexify(arr):
+  arr=np.array([arr.real,arr.imag])
+  return arr
+
+def recomplexify(arl):
+  return arl[0]+1j*arl[1]
