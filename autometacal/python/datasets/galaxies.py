@@ -34,7 +34,7 @@ def gs_generate_images(**kwargs):
               'mean_radius': 3.0,     #size
               'scatter_radius': 0.1,  #
               'psf_beta': 5,          #psf
-              'psf_fwhm': 0.5,        #
+              'psf_fwhm': 0.7,        #
               'mean_snr': 200,        #snr
               'scatter_snr': 20,      #
               'flux' : 1e5,           #flux
@@ -135,7 +135,7 @@ def gs_drawKimage(image, pixel_scale=0.2, interp_factor=2, padding_factor=1):
   
   #draw galsim output image
   result = img_galsim.drawKImage(bounds=bounds,
-                                 scale=2.*np.pi/(Nk*pixel_scale),
+                                 scale=2.*np.pi/(Nk*padding_factor*pixel_scale),
                                  recenter=False)
   
   return tf.convert_to_tensor(result.array,dtype=tf.complex64)
@@ -145,29 +145,29 @@ def gs_Deconvolve(psf_img,
                   pixel_scale=0.2,
                   interp_factor=2,
                   padding_factor=1):
-    """
-    Returns a deconvolution kernel of a psf image.
-    
-    Args:
-        psf_img: numpy array representing the psf model
-        pixel_scale: the pixel scale of the image, in arcsec/pixel
-        interp_factor: the interpolation factor for super-resolution
-        padding_factor: a factor to add side pads to the image
-    Returns:
-        A complex tensorflow tensor that is a deconvolution kernel.
-    
-    """
-    
-    N = len(psf_img)
-    
-    psf_galsim=galsim.InterpolatedImage(galsim.Image(psf_img,scale=pixel_scale))
-    ipsf=galsim.Deconvolve(psf_galsim)
-    Nk = N*interp_factor*padding_factor
-    bounds = galsim._BoundsI(-Nk//2, 
-                             Nk//2-1, 
-                             -Nk//2, 
-                             Nk//2-1)
-    imipsf = ipsf.drawKImage(bounds=bounds, 
-                             scale=2.*np.pi/(Nk), 
-                             recenter=False)
-    return tf.convert_to_tensor(imipsf.array,dtype=tf.complex64)
+  """
+  Returns a deconvolution kernel of a psf image.
+  
+  Args:
+      psf_img: numpy array representing the psf model
+      pixel_scale: the pixel scale of the image, in arcsec/pixel
+      interp_factor: the interpolation factor for super-resolution
+      padding_factor: a factor to add side pads to the image
+  Returns:
+      A complex tensorflow tensor that is a deconvolution kernel.
+  
+  """
+  
+  N = len(psf_img)
+  
+  psf_galsim=galsim.InterpolatedImage(galsim.Image(psf_img,scale=pixel_scale))
+  ipsf=galsim.Deconvolve(psf_galsim)
+  Nk = N*interp_factor*padding_factor
+  bounds = galsim._BoundsI(-Nk//2, 
+                           Nk//2-1, 
+                           -Nk//2, 
+                           Nk//2-1)
+  imipsf = ipsf.drawKImage(bounds=bounds, 
+                           scale=2.*np.pi/(Nk*padding_factor* im_scale), 
+                           recenter=False)
+  return tf.convert_to_tensor(imipsf.array,dtype=tf.complex64)
