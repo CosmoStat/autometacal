@@ -69,10 +69,10 @@ def gs_generate_images(**kwargs):
                       fwhm=defaults['psf_fwhm'])
   
   #draw galaxy before convolution
-  true_gal_image = gal.drawImage(nx=defaults['stamp_size'],
-                            ny=defaults['stamp_size'],
-                            scale=defaults['pixel_scale'],
-                            method=defaults['method'])
+  #true_gal_image = gal.drawImage(nx=defaults['stamp_size'],
+  #                          ny=defaults['stamp_size'],
+  #                          scale=defaults['pixel_scale'],
+  #                          method=defaults['method'])
   
   #convolve galaxy and psf
   gal = galsim.Convolve([gal,psf])
