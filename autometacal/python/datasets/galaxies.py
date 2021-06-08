@@ -97,11 +97,11 @@ def gs_generate_images(**kwargs):
   
   #draw kimage of galaxy
   gal_k =  gs_drawKimage(gal_image.array, 
-                              defaults['pixel_scale'])
+                              defaults['pixel_scale'], interp_factor=2, padding_factor=1)
   
   # draw kimage of the psf
   psf_k =  gs_drawKimage(psf_image.array, 
-                              defaults['pixel_scale'])
+                              defaults['pixel_scale'], interp_factor=2, padding_factor=1)
   
   
   #output tensors
