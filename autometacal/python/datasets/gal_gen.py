@@ -32,7 +32,7 @@ class GalGenConfig(tfds.core.BuilderConfig):
     self.stamp_size = stamp_size
     self.pixel_scale = pixel_scale
     self.flux = flux
-    self.k_padding = 1
+    self.k_padding = 2
     self.k_interp = 2
 
 
@@ -85,12 +85,11 @@ class GalGen(tfds.core.GeneratorBasedBuilder):
     """Yields examples."""
     np.random.seed(31415)
 
-    for i in range(100000):
+    for i in range(100):
       
       label, gal_img, psf_img, gal_kimg, psf_kimg = gs_generate_images()
       
-      #TODO: code to get NxN complex array to NxNx2 real array
-      
+     
       gal_kimg = decomplexify(gal_kimg.numpy())
       psf_kimg = decomplexify(psf_kimg.numpy())
 

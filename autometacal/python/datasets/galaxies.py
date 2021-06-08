@@ -31,11 +31,11 @@ def gs_generate_images(**kwargs):
 
   defaults = {'g_range' : 0.8,        #elipticity
               'g_scatter' : 0.25,     #
-              'mean_radius': 3.0,     #size
-              'scatter_radius': 0.1,  #
+              'mean_radius': 1.0,     #size
+              'scatter_radius': 0.01,  #
               'psf_beta': 5,          #psf
               'psf_fwhm': 0.7,        #
-              'mean_snr': 200,        #snr
+              'mean_snr': 2000,        #snr
               'scatter_snr': 20,      #
               'flux' : 1e5,           #flux
               'pixel_scale' : 0.2,    #
@@ -54,19 +54,22 @@ def gs_generate_images(**kwargs):
     g1 = truncnorm.rvs(a, b, loc=0, scale=defaults['g_scatter'])
     g2 = truncnorm.rvs(a, b, loc=0, scale=defaults['g_scatter'])
     
-  re = norm.rvs(3, 0.1)
+  re = norm.rvs(defaults['mean_radius'], defaults['scatter_radius'])
   
   #very simple galaxy model
-  gal = galsim.Exponential(flux=defaults['flux'] ,
-                           half_light_radius=re)
+  gal = galsim.Exponential(flux=1e5#defaults['flux'] 
+                           , scale_radius=2.7)
+                           #half_light_radius=re)
   
   #apply shear
-  gal = gal.shear(g1=g1,g2=g2)
+  gal = gal.shear(g1=0.1,g2=0.2)
     
   
   #create constant psf
   psf = galsim.Moffat(beta=defaults['psf_beta'], 
                       fwhm=defaults['psf_fwhm'])
+  #test
+  psf = galsim.Moffat(beta=5, flux=1., half_light_radius=1)
   
   #draw galaxy before convolution
   true_gal_image = gal.drawImage(nx=defaults['stamp_size'],
@@ -97,11 +100,12 @@ def gs_generate_images(**kwargs):
   
   #draw kimage of galaxy
   gal_k =  gs_drawKimage(gal_image.array, 
-                              defaults['pixel_scale'])
+                              defaults['pixel_scale'], interp_factor=2, padding_factor=2)
   
   # draw kimage of the psf
   psf_k =  gs_drawKimage(psf_image.array, 
-                              defaults['pixel_scale'])
+                              defaults['pixel_scale'], interp_factor=2, padding_factor=2)
+  
   
   
   #output tensors
@@ -113,7 +117,7 @@ def gs_generate_images(**kwargs):
 
 
 
-def gs_drawKimage(image, pixel_scale=0.2, interp_factor=2, padding_factor=1):
+def gs_drawKimage(image, pixel_scale=0.2, interp_factor=2, padding_factor=2):
   """
   Args:
     image: numpy array
@@ -131,7 +135,7 @@ def gs_drawKimage(image, pixel_scale=0.2, interp_factor=2, padding_factor=1):
   bounds = galsim._BoundsI(-Nk//2, Nk//2-1, -Nk//2, Nk//2-1)
   
   #interpolated galsim object from input image
-  img_galsim = galsim.InterpolatedImage(galsim.Image(image,scale=pixel_scale))
+  img_galsim = galsim.InterpolatedImage(galsim.Image(image,scale=pixel_scale,copy=True))
   
   #draw galsim output image
   result = img_galsim.drawKImage(bounds=bounds,
@@ -144,7 +148,7 @@ def gs_drawKimage(image, pixel_scale=0.2, interp_factor=2, padding_factor=1):
 def gs_Deconvolve(psf_img,
                   pixel_scale=0.2,
                   interp_factor=2,
-                  padding_factor=1):
+                  padding_factor=2):
   """
   Returns a deconvolution kernel of a psf image.
   
