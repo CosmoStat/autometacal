@@ -2,7 +2,7 @@
 import tensorflow_datasets as tfds
 import tensorflow as tf
 import numpy as np
-import galsim
+
 from .galaxies import gs_generate_images, gs_drawKimage
 
 _DESCRIPTION = "This tfds generates random toy-model galaxy stamps."
