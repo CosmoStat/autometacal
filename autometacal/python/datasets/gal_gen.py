@@ -12,7 +12,7 @@ _URL = "https://github.com/CosmoStat/autometacal"
 class GalGenConfig(tfds.core.BuilderConfig):
   """BuilderConfig for GalGen."""
 
-  def __init__(self, *, stamp_size=None, pixel_scale=None, flux=None, **kwargs):
+  def __init__(self, *,dataset_size=None, stamp_size=None, pixel_scale=None, flux=None, **kwargs):
     """BuilderConfig for SQUAD.
     Args:
       pixel_scale: pixel_scale of the image in arcsec/pixel.
@@ -22,8 +22,8 @@ class GalGenConfig(tfds.core.BuilderConfig):
     """
     v2 = tfds.core.Version("2.0.0")
     super(GalGenConfig, self).__init__(
-        description=("GalGen stamps in %d x %d resolution, %.2f arcsec/pixel, with flux of %.2f ." %
-                      (stamp_size, stamp_size, pixel_scale, flux)),
+        description=("GalGen %d stamps in %d x %d resolution, %.2f arcsec/pixel, with flux of %.2f ." %
+                      (dataset_size,stamp_size, stamp_size, pixel_scale, flux)),
         version=v2,
         release_notes={
             "2.0.0": "New split API (https://tensorflow.org/datasets/splits)",
@@ -45,10 +45,10 @@ class GalGen(tfds.core.GeneratorBasedBuilder):
   """
 
   BUILDER_CONFIGS = [
-      GalGenConfig(name='small_stamp/100k',dataset_size=100000, stamp_size=50, pixel_scale=.2, flux=1e5),
-      GalGenConfig(name='large_stamp/100k',dataset_size=100000, stamp_size=100, pixel_scale=.2, flux=1e5),
-      GalGenConfig(name='small_stamp/100',dataset_size=100, stamp_size=50, pixel_scale=.2, flux=1e5),
-      GalGenConfig(name='large_stamp/100',dataset_size=100, stamp_size=100, pixel_scale=.2, flux=1e5)
+      GalGenConfig(name='small_stamp_100k',dataset_size=100000, stamp_size=50, pixel_scale=.2, flux=1e5),
+      GalGenConfig(name='large_stamp_100k',dataset_size=100000, stamp_size=100, pixel_scale=.2, flux=1e5),
+      GalGenConfig(name='small_stamp_100',dataset_size=100, stamp_size=50, pixel_scale=.2, flux=1e5),
+      GalGenConfig(name='large_stamp_100',dataset_size=100, stamp_size=100, pixel_scale=.2, flux=1e5)
    ]
 
   VERSION = tfds.core.Version('0.0.1')

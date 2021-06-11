@@ -47,7 +47,7 @@ def gs_generate_images(**kwargs):
               'flux' : 1e5,           #flux
               'pixel_scale' : 0.2,    #
               'stamp_size' : 50,      #
-              'method' : "no_pixel"   #
+              'method' : "no_pixel",   #
               'interp_factor': 2,     #kimage interpolation
               'padding_factor': 1     #kimage padding
              }
