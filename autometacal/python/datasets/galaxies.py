@@ -168,6 +168,6 @@ def gs_Deconvolve(psf_img,
                            -Nk//2, 
                            Nk//2-1)
   imipsf = ipsf.drawKImage(bounds=bounds, 
-                           scale=2.*np.pi/(Nk*padding_factor* im_scale), 
+                           scale=2.*np.pi/(N*padding_factor* im_scale), 
                            recenter=False)
   return tf.convert_to_tensor(imipsf.array,dtype=tf.complex64)
