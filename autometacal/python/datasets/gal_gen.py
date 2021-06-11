@@ -29,6 +29,7 @@ class GalGenConfig(tfds.core.BuilderConfig):
             "2.0.0": "New split API (https://tensorflow.org/datasets/splits)",
         },
         **kwargs)
+    self.dataset_size = dataset_size
     self.stamp_size = stamp_size
     self.pixel_scale = pixel_scale
     self.flux = flux
@@ -44,8 +45,10 @@ class GalGen(tfds.core.GeneratorBasedBuilder):
   """
 
   BUILDER_CONFIGS = [
-      GalGenConfig(name='variant1', stamp_size=50, pixel_scale=.2, flux=1e5),
-      GalGenConfig(name='variant2', stamp_size=100, pixel_scale=.2, flux=1e5),
+      GalGenConfig(name='small_stamp/100k',dataset_size=100000, stamp_size=50, pixel_scale=.2, flux=1e5),
+      GalGenConfig(name='large_stamp/100k',dataset_size=100000, stamp_size=100, pixel_scale=.2, flux=1e5),
+      GalGenConfig(name='small_stamp/100',dataset_size=100, stamp_size=50, pixel_scale=.2, flux=1e5),
+      GalGenConfig(name='large_stamp/100',dataset_size=100, stamp_size=100, pixel_scale=.2, flux=1e5)
    ]
 
   VERSION = tfds.core.Version('0.0.1')
@@ -77,17 +80,21 @@ class GalGen(tfds.core.GeneratorBasedBuilder):
 
   def _split_generators(self,dl):
     """Returns generators according to split."""
-    return {tfds.Split.TRAIN: self._generate_examples(self.builder_config.stamp_size,
+    return {tfds.Split.TRAIN: self._generate_examples(self.builder_config.dataset_size,
+                                                      self.builder_config.stamp_size,
                                                       self.builder_config.pixel_scale,
                                                       self.builder_config.flux)}
 
-  def _generate_examples(self, stamp_size, pixel_scale, flux):
+  def _generate_examples(self,dataset_size, stamp_size, pixel_scale, flux):
     """Yields examples."""
     np.random.seed(31415)
 
-    for i in range(100000):
+    for i in range(dataset_size):
       
-      label, gal_img, psf_img, gal_kimg, psf_kimg = gs_generate_images()
+      label, gal_img, psf_img, gal_kimg, psf_kimg = gs_generate_images(stamp_size = stamp_size,
+                                                                       pixel_scale = pixel_scale,
+                                                                       flux = flux
+                                                                      )
       
       #TODO: code to get NxN complex array to NxNx2 real array
       
