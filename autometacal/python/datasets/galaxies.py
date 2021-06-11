@@ -22,11 +22,18 @@ def gs_generate_images(**kwargs):
     pixel_scale: intended pixel scale in arcsec^2/pixel
     stamp_size: size in pixels of the NxN resulting image
     method: galsim drawing method
-    interpolator: galsim interpolation used to draw the image on the pixel grid.
+    mean_radius: mean half-light radii of generated galaxies
+    scatter_radius: scatter of half-light radii of generated galaxies
+    mean_snr: average snr of generated stamps (snr as per galsim definition)
+    scatter_snr: scatter in snr of generated stamps
+    interp_factor: interpolation factor for drawing k space images
+    padding_factor: padding factor for drawing k space images
   Returns:
     g1, g2: galaxy shape parameters
-    gal_image.array: numpy array that represents galaxy image
-  
+    gal: tensor with a 2-d array representing an observed image of a galaxy (with convolved psf)
+    psf: tensor with a 2-d array representing the model of the psf
+    gal_k: k space image of gal
+    psf_k: k space image of psf
   """
 
   defaults = {'g_range' : 0.8,        #elipticity
@@ -41,6 +48,8 @@ def gs_generate_images(**kwargs):
               'pixel_scale' : 0.2,    #
               'stamp_size' : 50,      #
               'method' : "no_pixel"   #
+              'interp_factor': 2,     #kimage interpolation
+              'padding_factor': 1     #kimage padding
              }
 
   defaults.update(kwargs)
@@ -54,7 +63,7 @@ def gs_generate_images(**kwargs):
     g1 = truncnorm.rvs(a, b, loc=0, scale=defaults['g_scatter'])
     g2 = truncnorm.rvs(a, b, loc=0, scale=defaults['g_scatter'])
     
-  re = norm.rvs(3, 0.1)
+  re = norm.rvs(defaults['mean_radius'], defaults['scatter_radius'])
   
   #very simple galaxy model
   gal = galsim.Exponential(flux=defaults['flux'] ,
@@ -90,9 +99,9 @@ def gs_generate_images(**kwargs):
                             scale=defaults['pixel_scale'],
                             method=defaults['method'])
   
+  #add noise to image with a given SNR
   noise = galsim.GaussianNoise()
   snr = norm.rvs(defaults['mean_snr'],defaults['scatter_snr'],)
-
   gal_image.addNoiseSNR(noise,snr=snr)
   
   #draw kimage of galaxy
@@ -104,7 +113,7 @@ def gs_generate_images(**kwargs):
                               defaults['pixel_scale'], interp_factor=2, padding_factor=1)
   
   
-  #output tensors
+  #output to tf tensors
   gal = tf.convert_to_tensor(gal_image.array,dtype=tf.float32)
   psf = tf.convert_to_tensor(psf_image.array,dtype=tf.float32)
   g   = tf.convert_to_tensor([g1,g2],dtype=tf.float32)
