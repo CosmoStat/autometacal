@@ -195,7 +195,18 @@ def gs_Deconvolve(psf_img,
   return tf.convert_to_tensor(imipsf.array,dtype=tf.complex64)
 
 def gs_noise_generator(stamp_size=50,variance=5,pixel_scale=.2,interp_factor=2,padding_factor=1):
-
+  """ Generate a noise k space image using GalSim.
+  
+  Args:
+    stamp_size: in pixels
+    variance: noise variance
+    pixel_scale: in arcsec/pixel
+    interp_factor: interpolation factor for k space
+    padding_factor: padding wrap factor
+  Returns:
+    A complex64 numpy array.
+    
+  """
   noise = galsim.GaussianNoise().withVariance(variance)
   noise_image = galsim.Image(stamp_size,stamp_size, scale=pixel_scale)
   noise.applyTo(noise_image)

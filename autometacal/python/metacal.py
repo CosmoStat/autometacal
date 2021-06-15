@@ -11,6 +11,18 @@ def generate_mcal_image(gal_image,
                         psf_inverse,
                         noise_image, g):
   """ Generate a metacalibrated image.
+  
+  Args: 
+    gal_image: NxN numpy array image of a galaxy 
+    psf_image: NxN numpy array of psf model
+    gal_kimage: complex numpy array of k space image of galaxy
+    psf_kimage: complex numpy array of k space image of psf model
+    psf_inverse: complex numpy array of k space image psf deconvolution kernel
+    noise_image: a NxN numpy array with noise
+    g: [g1, g2] shear
+  Returns:
+    tf tensor containing image of galaxy after deconvolution by psf_deconv, shearing by g, and reconvolution with psf_image
+  
   """
   g1, g2 = g[0], g[1]
   g1 = tf.reshape(tf.convert_to_tensor(g1, dtype=tf.float32), [-1])
