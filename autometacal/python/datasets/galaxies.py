@@ -38,7 +38,7 @@ def gs_generate_images(**kwargs):
 
   defaults = {'g_range' : 0.8,        #elipticity
               'g_scatter' : 0.25,     #
-              'mean_radius': 3.0,     #size
+              'mean_radius': 1.0,     #size
               'scatter_radius': 0.1,  #
               'psf_beta': 5,          #psf
               'psf_fwhm': 0.7,        #
@@ -78,23 +78,23 @@ def gs_generate_images(**kwargs):
                       fwhm=defaults['psf_fwhm'])
   
   #draw galaxy before convolution
-  #true_gal_image = gal.drawImage(nx=defaults['stamp_size'],
-  #                          ny=defaults['stamp_size'],
-  #                          scale=defaults['pixel_scale'],
-  #                          method=defaults['method'])
+  model_Image = gal.drawImage(nx=defaults['stamp_size'],
+                            ny=defaults['stamp_size'],
+                            scale=defaults['pixel_scale'],
+                            method=defaults['method'])
   
   #convolve galaxy and psf
   gal = galsim.Convolve([gal,psf])
   
   #draw psf image
-  psf_image = psf.drawImage(nx=defaults['stamp_size'],
+  psf_Image = psf.drawImage(nx=defaults['stamp_size'],
                             ny=defaults['stamp_size'],
                             scale=defaults['pixel_scale'],
                             method=defaults['method'])
 
   
-  #draw final galaxy image   
-  gal_image = gal.drawImage(nx=defaults['stamp_size'],
+  #draw final observed image   
+  obs_Image = gal.drawImage(nx=defaults['stamp_size'],
                             ny=defaults['stamp_size'],
                             scale=defaults['pixel_scale'],
                             method=defaults['method'])
@@ -102,27 +102,40 @@ def gs_generate_images(**kwargs):
   #add noise to image with a given SNR
   noise = galsim.GaussianNoise()
   snr = norm.rvs(defaults['mean_snr'],defaults['scatter_snr'],)
-  gal_image.addNoiseSNR(noise,snr=snr)
+  obs_Image.addNoiseSNR(noise,snr=snr)
   
   #draw kimage of galaxy
-  gal_k =  gs_drawKimage(gal_image.array, 
-                              defaults['pixel_scale'], interp_factor=2, padding_factor=1)
+  obs_k =  gs_drawKimage(obs_Image.array, 
+                         defaults['pixel_scale'], 
+                         interp_factor=defaults['interp_factor'], 
+                         padding_factor=defaults['padding_factor'])
   
   # draw kimage of the psf
-  psf_k =  gs_drawKimage(psf_image.array, 
-                              defaults['pixel_scale'], interp_factor=2, padding_factor=1)
+  psf_k =  gs_drawKimage(psf_Image.array, 
+                         defaults['pixel_scale'], 
+                         interp_factor=defaults['interp_factor'], 
+                         padding_factor=defaults['padding_factor'])
   
+  #draw psf deconvolution kernel
+  psf_deconv = gs_Deconvolve(psf_Image.array,
+                             defaults['pixel_scale'], 
+                             interp_factor=defaults['interp_factor'], 
+                             padding_factor=defaults['padding_factor'])
   
-  #output to tf tensors
-  gal = tf.convert_to_tensor(gal_image.array,dtype=tf.float32)
-  psf = tf.convert_to_tensor(psf_image.array,dtype=tf.float32)
-  g   = tf.convert_to_tensor([g1,g2],dtype=tf.float32)
+  #output everything to tf tensors  
+                                                                   # tfds names: 
+  g   = tf.convert_to_tensor([g1,g2],dtype=tf.float32)             # label
+  model = tf.convert_to_tensor(model_Image.array,dtype=tf.float32) # model_image
+  obs = tf.convert_to_tensor(obs_Image.array,dtype=tf.float32)     # obs_image
+  psf = tf.convert_to_tensor(psf_Image.array,dtype=tf.float32)     # psf_image
  
-  return g, gal, psf, gal_k, psf_k 
+  return g, model, obs, psf, obs_k, psf_k, psf_deconv 
 
 
-
-def gs_drawKimage(image, pixel_scale=0.2, interp_factor=2, padding_factor=1):
+def gs_drawKimage(image, 
+                  pixel_scale=0.2, 
+                  interp_factor=2, 
+                  padding_factor=1):
   """
   Args:
     image: numpy array
@@ -144,7 +157,7 @@ def gs_drawKimage(image, pixel_scale=0.2, interp_factor=2, padding_factor=1):
   
   #draw galsim output image
   result = img_galsim.drawKImage(bounds=bounds,
-                                 scale=2.*np.pi/(Nk*padding_factor*pixel_scale),
+                                 scale=2.*np.pi/(N*padding_factor*pixel_scale),
                                  recenter=False)
   
   return tf.convert_to_tensor(result.array,dtype=tf.complex64)
@@ -177,6 +190,21 @@ def gs_Deconvolve(psf_img,
                            -Nk//2, 
                            Nk//2-1)
   imipsf = ipsf.drawKImage(bounds=bounds, 
-                           scale=2.*np.pi/(N*padding_factor* im_scale), 
+                           scale=2.*np.pi/(N*padding_factor* pixel_scale), 
                            recenter=False)
   return tf.convert_to_tensor(imipsf.array,dtype=tf.complex64)
+
+def gs_noise_generator(stamp_size=50,variance=5,pixel_scale=.2,interp_factor=2,padding_factor=1):
+
+  noise = galsim.GaussianNoise().withVariance(variance)
+  noise_image = galsim.Image(stamp_size,stamp_size, scale=pixel_scale)
+  noise.applyTo(noise_image)
+  noise_image = galsim.InterpolatedImage(noise_image)
+  Nk = stamp_size*padding_factor*interp_factor
+  from galsim.bounds import _BoundsI
+
+  bounds = _BoundsI(-Nk//2, Nk//2-1, -Nk//2, Nk//2-1)
+  imnos = noise_image.drawKImage(bounds=bounds,
+                         scale=2.*np.pi/(stamp_size*padding_factor*pixel_scale),
+                         recenter=False)
+  return imnos.array.astype('complex64')
