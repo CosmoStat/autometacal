@@ -1,2 +1,2 @@
 import autometacal.python.datasets as datasets
-from . import metacal
+import autometacal.python.metacal as metacal
