@@ -36,13 +36,13 @@ def gs_generate_images(**kwargs):
     psf_k: k space image of psf
   """
 
-  defaults = {'g_range' : 0.8,        #elipticity
-              'g_scatter' : 0.25,     #
+  defaults = {'g_range' : 0.1,        #elipticity
+              'g_scatter' : 0.01,     #
               'mean_radius': 1.0,     #size
               'scatter_radius': 0.1,  #
               'psf_beta': 5,          #psf
               'psf_fwhm': 0.7,        #
-              'mean_snr': 200,        #snr
+              'mean_snr': 2000,        #snr
               'scatter_snr': 20,      #
               'flux' : 1e5,           #flux
               'pixel_scale' : 0.2,    #
