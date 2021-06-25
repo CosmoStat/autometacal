@@ -1,98 +1,85 @@
 # This file will contain the tools needed to generate a metacal image
 import tensorflow as tf
+from tensorflow.python.ops.gen_batch_ops import batch
 import galflow as gf
-##only auto-differentiable functions must go here
+import numpy as np
 
-@tf.function
 def generate_mcal_image(gal_image,
                         psf_image,
-                        gal_kimage, 
-                        psf_kimage,
-                        psf_inverse,
-                        noise_image, g):
-  """ Generate a metacalibrated image.
+                        reconvolution_psf_image,
+                        g):
+  """ Generate a metacalibrated image given input and target PSFs.
   
   Args: 
-    gal_image: NxN numpy array image of a galaxy 
-    psf_image: NxN numpy array of psf model
-    gal_kimage: complex numpy array of k space image of galaxy
-    psf_kimage: complex numpy array of k space image of psf model
-    psf_inverse: complex numpy array of k space image psf deconvolution kernel
-    noise_image: a NxN numpy array with noise
-    g: [g1, g2] shear
+    gal_image: (batch_size, N, N ) tensor image of galaxies
+    psf_image: (batch_size, N, N ) tensor image of psf model
+    reconvolution_psf_image: (batch_size, N, N ) tensor of target psf model
+    g: [batch_size, 2] tensor of input shear
   Returns:
-    tf tensor containing image of galaxy after deconvolution by psf_deconv, shearing by g, and reconvolution with psf_image
+    tf tensor containing image of galaxy after deconvolution by 
+    psf_deconv, shearing by g, and reconvolution with reconvolution_psf_image
   
   """
-  g1, g2 = g[0], g[1]
-  g1 = tf.reshape(tf.convert_to_tensor(g1, dtype=tf.float32), [-1])
-  g2 = tf.reshape(tf.convert_to_tensor(g2, dtype=tf.float32), [-1])  
-  
-  #sizes
-  img_size = len(gal_image)
-  kmg_size = len(gal_kimage)
-  
-  ### tensorflow preparation ops
-  #galaxy k image
-  tf_gal_img = tf.expand_dims(tf.convert_to_tensor(gal_kimage, dtype=tf.complex64),0)
-  
-  #psf k image
-  tf_psf_img = tf.signal.fftshift(tf.expand_dims(tf.convert_to_tensor(psf_kimage, dtype=tf.complex64),0),axes=2)[:,:,:(kmg_size)//2+1]
-  
-  
-  #psf deconvolution kernel
-  tf_inv_psf_img = tf.expand_dims(tf.convert_to_tensor(psf_inverse, dtype=tf.complex64),0)
-  
-  #noise k image
-  tf_nos_img = tf.expand_dims(tf.convert_to_tensor(noise_image, dtype=tf.complex64),0)
-  
+  gal_image = tf.convert_to_tensor(gal_image, dtype=tf.float32)
+  psf_image = tf.convert_to_tensor(psf_image, dtype=tf.float32)
+  reconvolution_psf_image = tf.convert_to_tensor(reconvolution_psf_image, dtype=tf.float32)
+  g = tf.convert_to_tensor(g, dtype=tf.float32)
+  batch_size, nx, ny = gal_image.get_shape().as_list()
 
-  ### metacal procedure
-  # Step1: remove observed psf
-  img = tf_gal_img * tf_inv_psf_img
-  imgn = tf_nos_img * tf_inv_psf_img
+  # Convert input stamps to k space
+  # The ifftshift is to remove the phase for centered objects
+  # the fftshift is to put the 0 frequency at the center of the k image
+  imk = tf.signal.fftshift(tf.signal.fft2d(tf.cast(tf.signal.ifftshift(gal_image),
+                                                   tf.complex64)))
+  # Note the abs here, to remove the phase of the PSF
+  kpsf = tf.cast(tf.abs(tf.signal.fft2d(tf.cast(psf_image, tf.complex64))), 
+                 tf.complex64) 
+  kpsf = tf.signal.fftshift(kpsf)
+  krpsf = tf.cast(tf.abs(tf.signal.fft2d(tf.cast(reconvolution_psf_image,tf.complex64))), tf.complex64)
+  krpsf = tf.signal.fftshift(krpsf)
 
+  # Compute Fourier mask for high frequencies
+  # careful, this is not exactly the correct formula for fftfreq
+  kx, ky = tf.meshgrid(tf.linspace(-0.5,0.5,nx),
+                       tf.linspace(-0.5,0.5,ny))
+  mask = tf.cast(tf.math.sqrt(kx**2 + ky**2) <= 0.5, dtype='complex64')
+  mask = tf.expand_dims(mask, axis=0)
 
-  # Step2: add shear layer
-  img = gf.shear(tf.expand_dims(img,-1), g1, g2)[...,0]
-  imgn = gf.shear(tf.expand_dims(imgn,-1), -g1, -g2)
-  imgn=tf.image.rot90(imgn,-1)[...,0]
+  # Deconvolve image from input PSF
+  im_deconv = imk * ( (1./(kpsf+1e-10))*mask)
 
-  # Step3: apply psf again
-  img = gf.kconvolve(tf.signal.fftshift(img,axes=2)[...,:(len(img[0]))//2+1], (tf_psf_img))[...,0]
-  img = tf.expand_dims(tf.signal.fftshift(img),-1)
-  img = tf.image.resize_with_crop_or_pad(img, img_size, img_size)
-  
-  imgn = gf.kconvolve(tf.signal.fftshift(imgn,axes=2)[...,:(len(imgn[0]))//2+1], (tf_psf_img))[...,0]
-  imgn = tf.expand_dims(tf.signal.fftshift(imgn),-1)
-  imgn = tf.image.resize_with_crop_or_pad(imgn, img_size, img_size)
+  # Apply shear
+  im_sheared = gf.shear(tf.expand_dims(im_deconv,-1), g[...,0], g[...,1])[...,0]
 
-  # Adding the inverse sheared noise
-  img += imgn
+  # Reconvolve with target PSF
+  im_reconv = tf.signal.ifft2d(tf.signal.ifftshift(im_sheared * krpsf * mask))
+
+  # Compute inverse Fourier transform
+  img = tf.math.real(tf.signal.fftshift(im_reconv))
 
   return img
 
-
-@tf.function
-def get_metacal_response(obs_image,
+def get_metacal_response(gal_image,
                          psf_image,
-                         obs_kimage, 
-                         psf_kimage,
-                         psf_deconv,
-                         noise_image,
+                         reconvolution_psf_image,
                          method):
-  g = tf.zeros(2)
+  """
+  Convenience function to compute the shear response
+  """  
+  gal_image = tf.convert_to_tensor(gal_image, dtype=tf.float32)
+  psf_image = tf.convert_to_tensor(psf_image, dtype=tf.float32)
+  reconvolution_psf_image = tf.convert_to_tensor(reconvolution_psf_image, dtype=tf.float32)
+  batch_size, nx, ny = gal_image.get_shape().as_list()
+  g = tf.zeros([batch_size, 2])
   with tf.GradientTape() as tape:
     tape.watch(g)
     # Measure ellipticity under metacal
-    e = tf.stack(method(generate_mcal_image(obs_image,
-                                                   psf_image,
-                                                   obs_kimage, 
-                                                   psf_kimage,
-                                                   psf_deconv,
-                                                   noise_image,  g)[0,...,0]))
+    e = method(generate_mcal_image(gal_image,
+                                   psf_image,
+                                   reconvolution_psf_image,
+                                   g))
     
   # Compute response matrix
-  R = tape.jacobian(e, g)
+  R = tape.batch_jacobian(e, g)
   return e, R
 
