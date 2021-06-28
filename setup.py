@@ -19,7 +19,7 @@ setup(
     url='https://github.com/CosmoStat/autometacal',
     license='MIT',
     packages=find_packages(),
-    install_requires=['tfa-nightly', 'tfg-nightly','tensorflow-datasets'],
+    install_requires=['tensorflow-addons', 'tensorflow-datasets'],
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
