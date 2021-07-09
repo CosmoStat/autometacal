@@ -29,14 +29,14 @@ def generate_mcal_image(gal_image,
   # Convert input stamps to k space
   # The ifftshift is to remove the phase for centered objects
   # the fftshift is to put the 0 frequency at the center of the k image
-  imk = tf.signal.fftshift(tf.signal.fft2d(tf.cast(tf.signal.ifftshift(gal_image),
-                                                   tf.complex64)))
+  imk = tf.signal.fftshift(tf.signal.fft2d(tf.cast(tf.signal.ifftshift(gal_image,axes=[1,2]),
+                                                   tf.complex64)),axes=[1,2])
   # Note the abs here, to remove the phase of the PSF
   kpsf = tf.cast(tf.abs(tf.signal.fft2d(tf.cast(psf_image, tf.complex64))), 
                  tf.complex64) 
-  kpsf = tf.signal.fftshift(kpsf)
+  kpsf = tf.signal.fftshift(kpsf,axes=[1,2])
   krpsf = tf.cast(tf.abs(tf.signal.fft2d(tf.cast(reconvolution_psf_image,tf.complex64))), tf.complex64)
-  krpsf = tf.signal.fftshift(krpsf)
+  krpsf = tf.signal.fftshift(krpsf,axes=[1,2])
 
   # Compute Fourier mask for high frequencies
   # careful, this is not exactly the correct formula for fftfreq
