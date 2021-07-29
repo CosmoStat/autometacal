@@ -83,3 +83,58 @@ def get_metacal_response(gal_image,
   R = tape.batch_jacobian(e, g)
   return e, R
 
+def get_metacal_response_finitediff(gal_image,psf_image,reconv_psf_image,step,method):
+  
+  img0s = autometacal.generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[0,0]]) 
+  img1p = autometacal.generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[step,0]]) 
+  img1m = autometacal.generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[-step,0]]) 
+  img2p = autometacal.generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[0,step]]) 
+  img2m = autometacal.generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[0,-step]]) 
+  
+  g0s = method(img0s)
+  g1p = method(img1p)
+  g1m = method(img1m)
+  g2p = method(img2p)
+  g2m = method(img2m)
+  
+  d11 = (g1p[:,0]-g1m[:,0])/(2*step)
+  d21 = (g1p[:,1]-g1m[:,1])/(2*step) 
+  d12 = (g2p[:,0]-g2m[:,0])/(2*step)
+  d22 = (g2p[:,1]-g2m[:,1])/(2*step)
+ 
+  #the matrix is correct. The transposition will swap d12 with d21 across a batch correctly.
+  R = np.array([[d11,d21],
+                [d12,d22]]).T
+  return g0s, R
+
+def get_ellipticities(img,frac=.1):
+  img_size = len(img[0])
+  nx = img_size
+  ny = img_size
+  XX=zeros((nx,ny))
+  XY=zeros((nx,ny))
+  YY=zeros((nx,ny))
+  w = zeros((nx,ny))
+  sigma=img_size*frac
+  
+  for i in range(0,nx):
+      x=0.5+i-(nx)/2.0
+      for j in range(0,ny):
+          y=0.5+j-(ny)/2.0
+          XX[i,j]=x*x
+          XY[i,j]=x*y
+          YY[i,j]=y*y
+          w[i,j]=np.exp(-((x) ** 2 + (y) ** 2) /
+                                 (2 * sigma ** 2))
+  
+
+  norm = tf.reduce_sum(tf.reduce_sum(w*img, axis=-1), axis=-1)
+  Q11 = tf.reduce_sum(tf.reduce_sum(w*img*YY, axis=-1), axis=-1)/norm
+  Q12 = tf.reduce_sum(tf.reduce_sum(w*img*XY, axis=-1), axis=-1)/norm
+  Q21 = Q12
+  Q22 = tf.reduce_sum(tf.reduce_sum(w*img*XX, axis=-1), axis=-1)/norm
+  q1 = Q11 - Q22
+  q2 = 2*Q12
+  T= Q11 + Q22  + 2*tf.sqrt(abs(Q11*Q22 - Q12**2))
+  r = tf.stack([q1/T, q2/T], axis=-1)
+  return r

@@ -219,3 +219,38 @@ def gs_noise_generator(stamp_size=50,variance=5,pixel_scale=.2,interp_factor=2,p
                          scale=2.*np.pi/(stamp_size*padding_factor*pixel_scale),
                          recenter=False)
   return imnos.array.astype('complex64')
+
+def make_data(N=1,
+  psf_noise = 1.0e-5,
+  img_noise = 1.0e-4,
+  scale = 0.263,
+  stamp_size = 51,
+  psf_fwhm = 0.9,
+  gal_hlr = 0.7,
+  gal_g1 = [0],
+  gal_g2 = [0]):
+  
+  gal_list = []
+  psf_list = []
+  
+  for n in range(N):
+    psf = galsim.Moffat(beta=2.5, 
+                      fwhm=psf_fwhm)
+
+    obj0 = galsim.Exponential(half_light_radius=gal_hlr).shear(g1=gal_g1[n],g2=gal_g2[n])
+    obj = galsim.Convolve(psf, obj0)
+
+    psf_image = psf.drawImage(nx=stamp_size, ny=stamp_size, scale=scale).array
+    gal_image = obj.drawImage(nx=stamp_size, ny=stamp_size, scale=scale).array
+
+    psf_image += rng.normal(scale=psf_noise, size=psf_image.shape)
+    gal_image += rng.normal(scale=img_noise, size=gal_image.shape)
+    gal_image = tf.convert_to_tensor(gal_image)
+    psf_image = tf.convert_to_tensor(psf_image)
+    gal_list.append(gal_image)
+    psf_list.append(psf_image)
+    del gal_image
+    del psf_image
+  gal_image_stack = tf.stack(gal_list)
+  psf_image_stack = tf.stack(psf_list)
+  return gal_image_stack, psf_image_stack
