@@ -1,4 +1,4 @@
-import numpy
+import tensorflow as tf
 from .gexceptions import GMixRangeError
 from . import shape
 
@@ -14,7 +14,7 @@ def T_to_fwhm(T):
     """
     convert T to fwhm for a gaussian
     """
-    sigma = numpy.sqrt(T / 2.0)
+    sigma = tf.math.sqrt(T / 2.0)
     return sigma_to_fwhm(sigma)
 
 
@@ -70,7 +70,7 @@ def T_to_r50(T):
     """
     convert T=2*sigma**2 to r50 for a gaussian
     """
-    sigma = numpy.sqrt(T / 2.0)
+    sigma = tf.math.sqrt(T / 2.0)
     return sigma_to_r50(sigma)
 
 
@@ -91,7 +91,7 @@ def moms_to_e1e2(M1, M2, T):
         M1/T M2/T also know as the standard ellipticity parameters
     """
     if isinstance(T, numpy.ndarray):
-        (w,) = numpy.where(T <= 0.0)
+        (w,) = tf.where(T <= 0.0)
         if w.size > 0:
             raise GMixRangeError("%d T were <= 0.0" % w.size)
     else:
