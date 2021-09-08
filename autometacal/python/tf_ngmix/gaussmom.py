@@ -1,9 +1,6 @@
-import logging
-import ngmix
-
-logger = logging.getLogger(__name__)
-
-
+from . import moments
+from . import gmix
+import tensorflow as tf
 class GaussMom(object):
     """
     measure gaussian weighted moments
@@ -34,7 +31,7 @@ class GaussMom(object):
         res = self._measure_moments(obs=obs)
 
         if res['flags'] != 0:
-            logger.debug("        moments failed: %s" % res['flagstr'])
+            print("        moments failed: %s" % res['flagstr'])
 
         return res
 
@@ -58,14 +55,14 @@ class GaussMom(object):
         return res
 
     def _set_mompars(self):
-        T = ngmix.moments.fwhm_to_T(self.fwhm)
+        T = moments.fwhm_to_T(self.fwhm)
 
         # the weight is always centered at 0, 0 or the
         # center of the coordinate system as defined
         # by the jacobian
 
-        weight = ngmix.GMixModel(
-            [0.0, 0.0, 0.0, 0.0, T, 1.0],
+        weight = gmix.GMixModel(tf.convert_to_tensor(
+            [0.0, 0.0, 0.0, 0.0, T, 1.0]),
             'gauss',
         )
 

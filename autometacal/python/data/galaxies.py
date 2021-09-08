@@ -220,7 +220,7 @@ def gs_noise_generator(stamp_size=50,variance=5,pixel_scale=.2,interp_factor=2,p
                          recenter=False)
   return imnos.array.astype('complex64')
 
-def make_data(N=1,
+def make_data(Ngals=1,
   psf_noise = 1.0e-5,
   img_noise = 1.0e-4,
   scale = 0.263,
@@ -232,8 +232,9 @@ def make_data(N=1,
   
   gal_list = []
   psf_list = []
+  rng = np.random.RandomState(31415)
   
-  for n in range(N):
+  for n in range(Ngals):
     psf = galsim.Moffat(beta=2.5, 
                       fwhm=psf_fwhm)
 

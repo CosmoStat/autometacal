@@ -1,5 +1,4 @@
-import numpy
-
+import tensorflow as tf
 from .gexceptions import GMixRangeError
 
 ONE_MINUS_EPS = 0.9999999999999999
@@ -56,15 +55,15 @@ def g1g2_to_e1e2(g1, g2):
     e1,e2: tuple of scalars
         shapes in (ixx-iyy)/(ixx+iyy) style space
     """
-    g = numpy.sqrt(g1 * g1 + g2 * g2)
+    g = tf.math.sqrt(g1 * g1 + g2 * g2)
 
-    if isinstance(g1, numpy.ndarray):
-        (w,) = numpy.where(g >= 1.0)
+    if tf.is_tensor(g1):
+        (w,) = tf.where(g >= 1.0)
         if w.size != 0:
             raise GMixRangeError("some g were out of bounds")
 
-        eta = 2 * numpy.arctanh(g)
-        e = numpy.tanh(eta)
+        eta = 2 * tf.math.atanh(g)
+        e = tf.math.tanh(eta)
 
         numpy.clip(e, 0.0, ONE_MINUS_EPS, e)
 
@@ -83,7 +82,7 @@ def g1g2_to_e1e2(g1, g2):
         if g == 0.0:
             return (0.0, 0.0)
 
-        eta = 2 * tf.math.arctanh(g)
+        eta = 2 * tf.math.atanh(g)
         e = tf.math.tanh(eta)
         if e >= 1.0:
             e = ONE_MINUS_EPS
@@ -112,12 +111,12 @@ def e1e2_to_g1g2(e1, e2):
     """
 
     e = tf.math.sqrt(e1 * e1 + e2 * e2)
-    if tf.is_Tensor(e1):
+    if tf.is_tensor(e1):
         (w,) = tf.where(e >= 1.0)
         if w.size != 0:
             raise GMixRangeError("some e were out of bounds")
 
-        eta = tf.arctanh(e)
+        eta = tf.atanh(e)
         g = tf.tanh(0.5 * eta)
 
         numpy.clip(g, 0.0, ONE_MINUS_EPS, g)
@@ -139,7 +138,7 @@ def e1e2_to_g1g2(e1, e2):
 
         else:
 
-            eta = tf.math.arctanh(e)
+            eta = tf.math.atanh(e)
             g = tf.math.tanh(0.5 * eta)
 
             if g >= 1.0:
@@ -182,7 +181,7 @@ def g1g2_to_eta1eta2(g1, g2):
     (w,) = tf.where(g > 0.0)
     if w.size > 0:
 
-      eta = 2 * tf.math.arctanh(g[w])
+      eta = 2 * tf.math.atanh(g[w])
       fac = eta / g[w]
 
       eta1[w] = fac * g1[w]
@@ -198,7 +197,7 @@ def g1g2_to_eta1eta2(g1, g2):
         eta1, eta2 = 0.0, 0.0
     else:
 
-      eta = 2 * tf.math.arctanh(g)
+      eta = 2 * tf.math.atanh(g)
 
       fac = eta / g
 
@@ -223,7 +222,7 @@ def e1e2_to_eta1eta2(e1, e2):
       eta space shapes
   """
 
-  if not tf.is_Tensor(e1):
+  if not tf.is_tensor(e1):
     e1 = tf.Tensor(e1, ndmin=1, copy=False)
     e2 = tf.Tensor(e2, ndmin=1, copy=False)
     is_scalar = True
@@ -241,7 +240,7 @@ def e1e2_to_eta1eta2(e1, e2):
   (w,) = tf.where(e > 0.0)
   if w.size > 0:
 
-    eta = tf.math.arctanh(e)
+    eta = tf.math.atanh(e)
     fac = eta[w] / e[w]
 
     eta1[w] = fac * e1[w]
@@ -269,7 +268,7 @@ def eta1eta2_to_g1g2(eta1, eta2):
       Reduced shear space shapes
   """
 
-  if not tf.is_Tensor(eta1):
+  if not tf.is_tensor(eta1):
     eta1 = tf.Tensor(eta1, ndmin=1, copy=False)
     eta2 = tf.Tensor(eta2, ndmin=1, copy=False)
     is_scalar = True
