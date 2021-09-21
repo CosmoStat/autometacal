@@ -6,8 +6,23 @@ Author: esheldon et al. (original), andrevitorelli (port)
 
 ver: 0.0.0
 """
-
 import tensorflow as tf
+import numpy as np
+from .gmix import gmix_eval_pixel
+
+#############utilites conversions
+def fwhm_to_sigma(fwhm):
+    """
+    convert fwhm to sigma for a gaussian
+    """
+    return fwhm / 2.3548200450309493
+
+def fwhm_to_T(fwhm):
+    """
+    convert fwhm to T for a gaussian
+    """
+    sigma = fwhm_to_sigma(fwhm)
+    return 2 * sigma ** 2
 
 def g1g2_to_e1e2(g1, g2):
     """
@@ -16,12 +31,10 @@ def g1g2_to_e1e2(g1, g2):
 
     g = tf.math.sqrt(g1 * g1 + g2 * g2)
 
-
     if g == 0.0:
         e1 = 0.0
         e2 = 0.0
     else:
-
         eta = 2 * tf.math.atanh(g)
         e = tf.math.tanh(eta)
         if e >= 1.0:
@@ -34,6 +47,9 @@ def g1g2_to_e1e2(g1, g2):
 
     return e1, e2 
 
+  
+######measure weighted moments  
+  
 def get_weighted_sums(wt, pixels, maxrad):
     """
     do sums for calculating the weighted moments
@@ -49,7 +65,7 @@ def get_weighted_sums(wt, pixels, maxrad):
     res = resarray[0]
 
     n_pixels = pixels.size
-    for i_pixel in range(n_pixels):
+    for i_pixel in range(n_pixels): #this will change to reduce_sum over pixels
 
         pixel = pixels[i_pixel]
 
@@ -59,7 +75,7 @@ def get_weighted_sums(wt, pixels, maxrad):
         rad2 = umod * umod + vmod * vmod
         if rad2 < maxrad2:
             #evaluate the gaussian weight at the position
-            weight = gauss2d_eval_pixel(wt, pixel,)
+            weight = gmix_eval_pixel(wt, pixel,)
             
             #calculate the variance of the pixel in the image
             var = 1.0 / (pixel["ierr"] * pixel["ierr"])

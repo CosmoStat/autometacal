@@ -1,3 +1,16 @@
+"""
+Observation implementations from ngmix ported to tensorflow
+
+Author: esheldon et al. (original), andrevitorelli (port)
+
+ver: 0.0.0
+
+"""
+
+import tensorflow as tf
+import numpy as np
+
+###jacobians
 def make_diagonal_jacobian(row0, col0, scale):
   jacob={'row0': row0,
   'col0': col0,
@@ -9,6 +22,29 @@ def make_diagonal_jacobian(row0, col0, scale):
   'scale': scale}
   return jacob
 
+  def jacobian_get_vu(jacob, row, col):
+    """
+    convert row,col to v,u using the input jacobian
+    """
+
+    rowdiff = row - jacob['row0']
+    coldiff = col - jacob['col0']
+
+    v = jacob['dvdrow']*rowdiff + jacob['dvdcol']*coldiff
+    u = jacob['dudrow']*rowdiff + jacob['dudcol']*coldiff
+
+    return v, u
+def jacobian_get_area(jacob):
+    """
+    get the pixel area
+    """
+    
+    return jacob['scale']**2
+
+
+
+#####make "observation" - in our case, it's just the pixels. 
+#####these don't need to be tfied
 
 def make_pixels(image, weight, jacob, ignore_zero_weight=True):
     """
@@ -34,12 +70,12 @@ def make_pixels(image, weight, jacob, ignore_zero_weight=True):
     """
 
     if ignore_zero_weight:
-        w = numpy.where(weight > 0.0)
+        w = np.where(weight > 0.0)
         npixels = w[0].size
     else:
         npixels = image.size
         
-    pixels = numpy.zeros(npixels, dtype=_pixels_dtype)
+    pixels = np.zeros(npixels, dtype=_pixels_dtype)
 
     fill_pixels(
         pixels,
@@ -72,11 +108,12 @@ def make_pixels(image, weight, jacob, ignore_zero_weight=True):
         are equal in length to the set of positive weight
         pixels in the weight image.  Default True.
     """
+    
     nrow, ncol = image.shape
     pixel_area = jacobian_get_area(jacob)
 
     ipixel = 0
-    for row in range(nrow):
+    for row in range(nrow):  #this doesn't need tfication, it's not used at "runtime"
         for col in range(ncol):
 
             ivar = weight[row, col]
@@ -96,25 +133,7 @@ def make_pixels(image, weight, jacob, ignore_zero_weight=True):
             if ivar < 0.0:
                 ivar = 0.0
 
-            pixel['ierr'] = sqrt(ivar)
+            pixel['ierr'] = tf.math.sqrt(ivar)
 
             ipixel += 1
   
-  def jacobian_get_vu(jacob, row, col):
-    """
-    convert row,col to v,u using the input jacobian
-    """
-
-    rowdiff = row - jacob['row0']
-    coldiff = col - jacob['col0']
-
-    v = jacob['dvdrow']*rowdiff + jacob['dvdcol']*coldiff
-    u = jacob['dudrow']*rowdiff + jacob['dudcol']*coldiff
-
-    return v, u
-def jacobian_get_area(jacob):
-    """
-    get the pixel area
-    """
-
-    return jacob['scale']**2

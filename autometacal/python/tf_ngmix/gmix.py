@@ -9,7 +9,11 @@ ver: 0.0.0
 
 
 import tensorflow as tf
+import numpy as np
 pi = 3.141592653589793
+
+
+###################evaluate pixels#####################################
 def gauss2d_eval_pixel(gauss, pixel):
     """
     evaluate a 2-d gaussian at the specified location
@@ -36,15 +40,28 @@ def gauss2d_eval_pixel(gauss, pixel):
     model_val = gauss["pnorm"] * tf.math.exp(-0.5 * chi2) * pixel["area"]
     
     return model_val
+  
+  def gmix_eval_pixel(gmix, pixel):
+    """
+    evaluate a single gaussian mixture
+    """
+    model_val = 0.0
+    for igauss in range(gmix.size):
+
+        model_val += gauss2d_eval_pixel(gmix[igauss], pixel)
+
+    return model_val
 
 
+  
+####################create gmixes ######################
 
 def gauss2d_set(gauss,p, row, col, irr, irc, icc):
     """
     set the gaussian, clearing normalizations
     """
     
-    gauss["norm_set"] = 0
+    gauss["norm_set"] = 0  ####these will change if tf doesn't accept structured arrays
     gauss["drr"] = nan
     gauss["drc"] = nan
     gauss["dcc"] = nan
@@ -154,7 +171,7 @@ def create_gmix(pars,model):
    
   return gmix
 
-_pvals_exp = array(
+_pvals_exp = np.array(
     [
         0.00061601229677880041,
         0.0079461395724623237,
@@ -165,7 +182,7 @@ _pvals_exp = array(
     ]
 )
 
-_fvals_exp = array(
+_fvals_exp = np.array(
     [
         0.002467115141477932,
         0.018147435573256168,
@@ -176,5 +193,5 @@ _fvals_exp = array(
     ]
 )
 
-_pvals_gauss = array([1.0])
-_fvals_gauss = array([1.0])
+_pvals_gauss = np.array([1.0])
+_fvals_gauss = np.array([1.0])
