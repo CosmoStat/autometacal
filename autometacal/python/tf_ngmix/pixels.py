@@ -12,6 +12,8 @@ import numpy as np
 
 ###jacobians
 def make_diagonal_jacobian(row0, col0, scale):
+  """make a simple diagonal jacobian, defining centre & pixel scale"""
+  
   jacob={'row0': row0,
   'col0': col0,
   'dvdrow': scale,
@@ -20,75 +22,75 @@ def make_diagonal_jacobian(row0, col0, scale):
   'dudcol': scale,
   'det': scale*scale,
   'scale': scale}
+
   return jacob
 
-  def jacobian_get_vu(jacob, row, col):
-    """
-    convert row,col to v,u using the input jacobian
-    """
+def jacobian_get_vu(jacob, row, col):
+  """
+  convert row,col to v,u using the input jacobian
+  """
 
-    rowdiff = row - jacob['row0']
-    coldiff = col - jacob['col0']
+  rowdiff = row - jacob['row0']
+  coldiff = col - jacob['col0']
 
-    v = jacob['dvdrow']*rowdiff + jacob['dvdcol']*coldiff
-    u = jacob['dudrow']*rowdiff + jacob['dudcol']*coldiff
+  v = jacob['dvdrow']*rowdiff + jacob['dvdcol']*coldiff
+  u = jacob['dudrow']*rowdiff + jacob['dudcol']*coldiff
 
-    return v, u
+  return v, u
+
 def jacobian_get_area(jacob):
-    """
-    get the pixel area
-    """
-    
-    return jacob['scale']**2
-
-
+  """
+  get the pixel area
+  """
+  
+  return jacob['scale']**2
 
 #####make "observation" - in our case, it's just the pixels. 
 #####these don't need to be tfied
 
 def make_pixels(image, weight, jacob, ignore_zero_weight=True):
-    """
-    make a pixel array from the image and weight
-    stores v,u image value, and 1/err for each pixel
-    parameters
-    ----------
-    pixels: array
-        1-d array of pixel structures, u,v,val,ierr
-    image: 2-d array
-        2-d image array
-    weight: 2-d array
-        2-d image array same shape as image
-    jacob: jacobian structure
-        row0,col0,dvdrow,dvdcol,dudrow,dudcol,...
-    ignore_zero_weight: bool
-        If set, zero or negative weight pixels are ignored.  In this case the
-        returned pixels array is equal in length to the set of positive weight
-        pixels in the weight image.  Default True.
-    returns
-    -------
-    1-d pixels array
-    """
+  """
+  make a pixel array from the image and weight
+  stores v,u image value, and 1/err for each pixel
+  parameters
+  ----------
+  pixels: array
+      1-d array of pixel structures, u,v,val,ierr
+  image: 2-d array
+      2-d image array
+  weight: 2-d array
+      2-d image array same shape as image
+  jacob: jacobian structure
+      row0,col0,dvdrow,dvdcol,dudrow,dudcol,...
+  ignore_zero_weight: bool
+      If set, zero or negative weight pixels are ignored.  In this case the
+      returned pixels array is equal in length to the set of positive weight
+      pixels in the weight image.  Default True.
+  returns
+  -------
+  1-d pixels array
+  """
 
-    if ignore_zero_weight:
-        w = np.where(weight > 0.0)
-        npixels = w[0].size
-    else:
-        npixels = image.size
-        
-    pixels = np.zeros(npixels, dtype=_pixels_dtype)
+  if ignore_zero_weight:
+    w = np.where(weight > 0.0)
+    npixels = w[0].size
+  else:
+    npixels = image.size
 
-    fill_pixels(
-        pixels,
-        image,
-        weight,
-        jacob,
-        ignore_zero_weight=ignore_zero_weight,
-    )
+  pixels = np.zeros(npixels, dtype=_pixels_dtype)
 
-    return pixels
+  fill_pixels(
+    pixels,
+    image,
+    weight,
+    jacob,
+    ignore_zero_weight=ignore_zero_weight,
+  )
+
+  return pixels
   
   
-  def fill_pixels(pixels, image, weight, jacob, ignore_zero_weight=True):
+def fill_pixels(pixels, image, weight, jacob, ignore_zero_weight=True):
     """
     store v,u image value, and 1/err for each pixel
     store into 1-d pixels array
@@ -108,12 +110,11 @@ def make_pixels(image, weight, jacob, ignore_zero_weight=True):
         are equal in length to the set of positive weight
         pixels in the weight image.  Default True.
     """
-    
     nrow, ncol = image.shape
     pixel_area = jacobian_get_area(jacob)
 
     ipixel = 0
-    for row in range(nrow):  #this doesn't need tfication, it's not used at "runtime"
+    for row in range(nrow):
         for col in range(ncol):
 
             ivar = weight[row, col]
@@ -137,3 +138,11 @@ def make_pixels(image, weight, jacob, ignore_zero_weight=True):
 
             ipixel += 1
   
+_pixels_dtype = [
+  ("u", "f8"),
+  ("v", "f8"),
+  ("area", "f8"),
+  ("val", "f8"),
+  ("ierr", "f8"),
+  ("fdiff", "f8"),
+]

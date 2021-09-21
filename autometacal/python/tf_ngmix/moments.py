@@ -12,41 +12,40 @@ from .gmix import gmix_eval_pixel
 
 #############utilites conversions
 def fwhm_to_sigma(fwhm):
-    """
-    convert fwhm to sigma for a gaussian
-    """
-    return fwhm / 2.3548200450309493
+  """
+  convert fwhm to sigma for a gaussian
+  """
+  return fwhm / 2.3548200450309493
 
 def fwhm_to_T(fwhm):
-    """
-    convert fwhm to T for a gaussian
-    """
-    sigma = fwhm_to_sigma(fwhm)
-    return 2 * sigma ** 2
+  """
+  convert fwhm to T for a gaussian
+  """
+  sigma = fwhm_to_sigma(fwhm)
+  return 2 * sigma ** 2
 
 def g1g2_to_e1e2(g1, g2):
-    """
-    convert g to e
-    """
+  """
+  convert g to e
+  """
 
-    g = tf.math.sqrt(g1 * g1 + g2 * g2)
+  g = tf.math.sqrt(g1 * g1 + g2 * g2)
 
-    if g == 0.0:
-        e1 = 0.0
-        e2 = 0.0
-    else:
-        eta = 2 * tf.math.atanh(g)
-        e = tf.math.tanh(eta)
-        if e >= 1.0:
-            e = 0.99999999
+  if g == 0.0:
+    e1 = 0.0
+    e2 = 0.0
+  else:
+    eta = 2 * tf.math.atanh(g)
+    e = tf.math.tanh(eta)
+    if e >= 1.0:
+      e = 0.99999999
 
-        fac = e / g
+    fac = e / g
 
-        e1 = fac * g1
-        e2 = fac * g2
+    e1 = fac * g1
+    e2 = fac * g2
 
-    return e1, e2 
-
+  return e1, e2 
   
 ######measure weighted moments  
   
@@ -103,9 +102,8 @@ def get_weighted_sums(wt, pixels, maxrad):
                     res["sums_cov"][i, j] += w2 * var * res["F"][i] * res["F"][j]
     res=dict(zip(res.dtype.names,res))
     return res
-
   
-  _moments_result_dtype = [
+_moments_result_dtype = [
   ('flags', 'i4'),
   ('npix', 'i4'),
   ('wsum', 'f8'),
