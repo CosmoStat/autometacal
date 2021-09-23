@@ -11,6 +11,8 @@ import tensorflow as tf
 import numpy as np
 pi = 3.141592653589793
 
+from .moments import g1g2_to_e1e2
+
 ###################evaluate pixels#####################################
 def gauss2d_eval_pixel(gauss, pixel):
   """
@@ -50,7 +52,64 @@ def gmix_eval_pixel(gmix, pixel):
 
   return model_val
   
+
+def gauss2d_eval_pixel_tf(gauss, pixel):
+  """
+  evaluate a 2-d gaussian at the specified location
+  parameters
+  ----------
+  gauss2d: gauss2d structure:
+    0 ='p',
+    1 = 'row',
+    2 = 'col',
+    3 = 'irr',
+    4 = 'irc',
+    5 = 'icc',
+    6 = 'det',
+    7 = 'norm_set',
+    8 = 'drr',
+    9 = 'drc',
+    10 ='dcc',
+    11 ='norm',
+    12 ='pnorm'
+  pixel: struct with coords u, v
+    0 = u,
+    1 = v,
+    2 = area
+    3 = val
+    4 = ierr
+    5 = fdiff
+  """
+  model_val = 0.0
+
+
+  # v->row, u->col in gauss
+  vdiff = pixel[:,1] - gauss[1]
+  udiff = pixel[:,0] - gauss[2]
+
+  chi2 = (
+       vdiff * vdiff * gauss[8]
+      + udiff * udiff * gauss[10]
+      - 2.0 * gauss[9] * vdiff * udiff
+  )
+
+  model_val = gauss[-1] * tf.math.exp(-0.5 * chi2) * pixel[:,2]
+
+  return model_val
+  
+def gmix_eval_pixel_tf(gmix, pixel):
+  """
+  evaluate a single gaussian mixture
+  """
+  model_val = 0.0
+  for igauss in range(gmix.size):
+
+      model_val += gauss2d_eval_pixel(gmix[igauss], pixel)
+
+  return model_val
 ####################create gmixes ######################
+
+
 
 def gauss2d_set(gauss,p, row, col, irr, irc, icc):
   """
@@ -191,3 +250,29 @@ _fvals_exp = np.array(
 
 _pvals_gauss = np.array([1.0])
 _fvals_gauss = np.array([1.0])
+
+_gauss2d_dtype = [
+  ("p", "f8"),
+  ("row", "f8"),
+  ("col", "f8"),
+  ("irr", "f8"),
+  ("irc", "f8"),
+  ("icc", "f8"),
+  ("det", "f8"),
+  ("norm_set", "i8"),
+  ("drr", "f8"),
+  ("drc", "f8"),
+  ("dcc", "f8"),
+  ("norm", "f8"),
+  ("pnorm", "f8"),
+]
+
+_moments_result_dtype = [
+  ('flags', 'i4'),
+  ('npix', 'i4'),
+  ('wsum', 'f8'),
+  ('sums', 'f8', 6),
+  ('sums_cov', 'f8', (6, 6)),
+  ('pars', 'f8', 6),
+  ('F', 'f8', 6),
+]

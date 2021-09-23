@@ -6,6 +6,7 @@ Author: esheldon et al. (original), andrevitorelli (port)
 ver: 0.0.0
 
 """
+__all__
 
 import tensorflow as tf
 import numpy as np
