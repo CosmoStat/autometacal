@@ -136,7 +136,6 @@ def create_gmix(pars,model):
   #create empty gmix
   gmix = np.zeros([n_gauss,13])  
 
-
   T_i_2 = 0.5 * T * fvals
   flux_i = flux * pvals
   

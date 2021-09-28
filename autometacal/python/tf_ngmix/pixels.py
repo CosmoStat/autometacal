@@ -47,9 +47,8 @@ def jacobian_get_area(jacob):
   return jacob['scale']**2
 
 #####make "observation" - in our case, it's just the pixels. 
-#####these don't need to be tfied
 
-def make_pixels(image, weight, jacob):
+def make_pixels(image, weight, jacob, ignore_zero_weight=True):
   """
   make a pixel array from the image and weight
   stores v,u image value, and 1/err for each pixel
@@ -72,7 +71,13 @@ def make_pixels(image, weight, jacob):
   1-d pixels array
   """
 
-  pixels = np.zeros(tf.size, dtype=_pixels_dtype)
+  if ignore_zero_weight:
+    w = np.where(weight > 0.0)
+    npixels = w[0].size
+  else:
+    npixels = image.size
+
+  pixels = np.zeros(npixels, dtype=_pixels_dtype)
 
   fill_pixels(
     pixels,
