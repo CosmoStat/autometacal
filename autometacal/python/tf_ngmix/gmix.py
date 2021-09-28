@@ -8,52 +8,50 @@ ver: 0.0.0
 """
 
 import tensorflow as tf
+from numpy import nan
 import numpy as np
 pi = 3.141592653589793
 
-from .moments import g1g2_to_e1e2
+#############utilites conversions
+def fwhm_to_sigma(fwhm):
+  """
+  convert fwhm to sigma for a gaussian
+  """
+  return fwhm / 2.3548200450309493
+
+def fwhm_to_T(fwhm):
+  """
+  convert fwhm to T for a gaussian
+  """
+  sigma = fwhm_to_sigma(fwhm)
+  return 2 * sigma ** 2
+
+def g1g2_to_e1e2(g1, g2):
+  """
+  convert g to e
+  """
+
+  g = tf.math.sqrt(g1 * g1 + g2 * g2)
+
+  if g == 0.0:
+    e1 = 0.0
+    e2 = 0.0
+  else:
+    eta = 2 * tf.math.atanh(g)
+    e = tf.math.tanh(eta)
+    if e >= 1.0:
+      e = 0.99999999
+
+    fac = e / g
+
+    e1 = fac * g1
+    e2 = fac * g2
+
+  return e1, e2 
 
 ###################evaluate pixels#####################################
-def gauss2d_eval_pixel(gauss, pixel):
-  """
-  evaluate a 2-d gaussian at the specified location
-  parameters
-  ----------
-  gauss2d: gauss2d structure
-      row,col,dcc,drr,drc,pnorm... See gmix.py
-  pixel: struct with coods
-      should have fields v,u
-  """
-  model_val = 0.0
 
-
-  # v->row, u->col in gauss
-  vdiff = pixel["v"] - gauss["row"]
-  udiff = pixel["u"] - gauss["col"]
-
-  chi2 = (
-       vdiff * vdiff * gauss["dcc"]
-      + udiff * udiff * gauss["dcc"]
-      - 2.0 * gauss["drc"] * vdiff * udiff
-  )
-
-  model_val = gauss["pnorm"] * tf.math.exp(-0.5 * chi2) * pixel["area"]
-
-  return model_val
-  
-def gmix_eval_pixel(gmix, pixel):
-  """
-  evaluate a single gaussian mixture
-  """
-  model_val = 0.0
-  for igauss in range(gmix.size):
-
-      model_val += gauss2d_eval_pixel(gmix[igauss], pixel)
-
-  return model_val
-  
-
-def gauss2d_eval_pixel_tf(gauss, pixel):
+def gmix_eval_pixel_tf(gmix, pixel):
   """
   evaluate a 2-d gaussian at the specified location
   parameters
@@ -80,134 +78,41 @@ def gauss2d_eval_pixel_tf(gauss, pixel):
     4 = ierr
     5 = fdiff
   """
-  model_val = 0.0
-
-
+  gmix = tf.expand_dims(gmix,1)
   # v->row, u->col in gauss
-  vdiff = pixel[:,1] - gauss[1]
-  udiff = pixel[:,0] - gauss[2]
+  vdiff = pixel[:,1] - gmix[:,:,1]
+  udiff = pixel[:,0] - gmix[:,:,2]
 
   chi2 = (
-       vdiff * vdiff * gauss[8]
-      + udiff * udiff * gauss[10]
-      - 2.0 * gauss[9] * vdiff * udiff
+       vdiff * vdiff * gmix[:,:,8]
+      + udiff * udiff * gmix[:,:,10]
+      - 2.0 * gmix[:,:,9] * vdiff * udiff
   )
 
-  model_val = gauss[-1] * tf.math.exp(-0.5 * chi2) * pixel[:,2]
+  model_val = tf.reduce_sum(gmix[:,:,-1] * tf.math.exp(-0.5 * chi2) * pixel[:,2],axis=0)
 
   return model_val
-  
-def gmix_eval_pixel_tf(gmix, pixel):
-  """
-  evaluate a single gaussian mixture
-  """
-  model_val = 0.0
-  for igauss in range(gmix.size):
 
-      model_val += gauss2d_eval_pixel(gmix[igauss], pixel)
 
-  return model_val
 ####################create gmixes ######################
-
-
-
-def gauss2d_set(gauss,p, row, col, irr, irc, icc):
-  """
-  set the gaussian, clearing normalizations
-  """
-
-  gauss["norm_set"] = 0  ####these will change if tf doesn't accept structured arrays
-  gauss["drr"] = nan
-  gauss["drc"] = nan
-  gauss["dcc"] = nan
-  gauss["norm"] = nan
-  gauss["pnorm"] = nan
-
-  gauss["p"] = p
-  gauss["row"] = row
-  gauss["col"] = col
-  gauss["irr"] = irr
-  gauss["irc"] = irc
-  gauss["icc"] = icc
-
-  gauss["det"] = irr * icc - irc * irc
-
-def gmix_fill_simple(gmix, pars, fvals, pvals):
-  """
-  fill a simple (6 parameter) gaussian mixture model
-  no error checking done here
-  """
-
-  row = pars[0]
-  col = pars[1]
-  g1 = pars[2]
-  g2 = pars[3]
-  T = pars[4]
-  flux = pars[5]
-
-  e1, e2 = g1g2_to_e1e2(g1, g2)
-
-  n_gauss = gmix.size
-  for i in range(n_gauss):
-
-    gauss = gmix[i]
-
-    T_i_2 = 0.5 * T * fvals[i]
-    flux_i = flux * pvals[i]
-
-    gauss2d_set(
-      gauss,
-      flux_i,
-      row,
-      col,
-      T_i_2 * (1 - e1),
-      T_i_2 * e2,
-      T_i_2 * (1 + e1),
-    )
-
-def gauss2d_set_norm(gauss):
-  """
-  set the normalization, and normalized variances
-
-  parameters
-  ----------
-  gauss: a 2-d gaussian structure
-      See gmix.py
-  """
-
-  T = gauss["irr"] + gauss["icc"]
-  idet = 1.0 / gauss["det"]
-
-  gauss["drr"] = gauss["irr"] * idet
-  gauss["drc"] = gauss["irc"] * idet
-  gauss["dcc"] = gauss["icc"] * idet
-  gauss["norm"] = 1.0 / (2 * pi * tf.math.sqrt(gauss["det"]))
-  gauss["pnorm"] = gauss["p"] * gauss["norm"]
-  gauss["norm_set"] = 1
-        
-def create_empty_gmix(n_gauss):
-  empty_gmix = []
-    
-  for gau in range(n_gauss):
-    dt = np.dtype(_gauss2d_dtype)
-    gaussarray = np.zeros(1, dtype=dt)
-    empty_gmix.append(gaussarray)
-  
-  return np.array(empty_gmix)    
-
-
-def gmix_set_norms(gmix):
-  """
-  set all norms for gaussians in the input gaussian mixture
-  parameters
-  ----------
-  gmix:
-     gaussian mixture
-  """
-  for gauss in gmix:
-    gauss2d_set_norm(gauss)
-        
 def create_gmix(pars,model):
+  """
+  returns:
+    gauss2d: gauss2d structure:
+    0 ='p',
+    1 = 'row',
+    2 = 'col',
+    3 = 'irr',
+    4 = 'irc',
+    5 = 'icc',
+    6 = 'det',
+    7 = 'norm_set',
+    8 = 'drr',
+    9 = 'drc',
+    10 ='dcc',
+    11 ='norm',
+    12 ='pnorm'
+  """
   
   if model == 'gauss':
     n_gauss = 1
@@ -218,15 +123,61 @@ def create_gmix(pars,model):
     n_gauss = 6
     fvals = _fvals_exp
     pvals = _pvals_exp
+
+  row = pars[0]
+  col = pars[1]
+  g1 = pars[2]
+  g2 = pars[3]
+  T = pars[4]
+  flux = pars[5]
+
+  e1, e2 = g1g2_to_e1e2(g1, g2)
+
+  #create empty gmix
+  gmix = np.zeros([n_gauss,13])  
+
+
+  T_i_2 = 0.5 * T * fvals
+  flux_i = flux * pvals
   
-  gmix = create_empty_gmix(n_gauss)
-  gmix_fill_simple(gmix,pars,fvals,pvals)
-  gmix_set_norms(gmix)
-
+  #fill vals
+  gmix[:,0] = flux_i #p
+  gmix[:,1] = row
+  gmix[:,2] = col
+  gmix[:,3] = T_i_2 * (1 - e1) #irr
+  gmix[:,4] = T_i_2 * e2 #irc
+  gmix[:,5] = T_i_2 * (1 + e1) #icc
+  gmix[:,6] = gmix[:,3] * gmix[:,5] - gmix[:,4]  * gmix[:,4] #det
+  gmix[:,7] = 0  #norm_set
+  
+  #set norms
+  gmix[:,8] = gmix[:,3] / gmix[:,6]
+  gmix[:,9] = gmix[:,4] / gmix[:,6]
+  gmix[:,10] = gmix[:,5] / gmix[:,6]
+  gmix[:,11] = 1.0 / (2 * pi * tf.math.sqrt(gmix[:,6]))
+  gmix[:,12] = gmix[:,0] * gmix[:,11]
+  gmix[:,7] = 1
+  
+  
+  #set flux
+  psum = 1./gmix[:,11]   
+  psum0 = tf.reduce_sum(gmix[:,0])
+  rat = psum / psum0
+  gmix[:,0] *= rat
+  # we will need to reset the pnorm values
+  gmix[:,12] = 0
+  
+  #set norms again
+  gmix[:,8] = gmix[:,3] / gmix[:,6]
+  gmix[:,9] = gmix[:,4] / gmix[:,6]
+  gmix[:,10] = gmix[:,5] / gmix[:,6]
+  gmix[:,11] = 1.0 / (2 * pi * tf.math.sqrt(gmix[:,6]))
+  gmix[:,12] = gmix[:,0] * gmix[:,11]
+  gmix[:,7] = 1
    
-  return gmix
+  return tf.convert_to_tensor([[*gauss] for gauss in gmix],dtype=tf.float32)
 
-_pvals_exp = np.array(
+_pvals_exp = tf.convert_to_tensor(
   [
     0.00061601229677880041,
     0.0079461395724623237,
@@ -234,10 +185,11 @@ _pvals_exp = np.array(
     0.21797364640726541,
     0.45496740582554868,
     0.26521634184240478,
-  ]
+  ],
+  dtype=tf.float32  
 )
 
-_fvals_exp = np.array(
+_fvals_exp = tf.convert_to_tensor(
   [
     0.002467115141477932,
     0.018147435573256168,
@@ -245,34 +197,10 @@ _fvals_exp = np.array(
     0.27137669897479122,
     0.79782256866993773,
     2.1623306025075739,
-  ]
+  ],
+  dtype=tf.float32
 )
 
-_pvals_gauss = np.array([1.0])
-_fvals_gauss = np.array([1.0])
+_pvals_gauss = tf.convert_to_tensor([1.0])
+_fvals_gauss = tf.convert_to_tensor([1.0])
 
-_gauss2d_dtype = [
-  ("p", "f8"),
-  ("row", "f8"),
-  ("col", "f8"),
-  ("irr", "f8"),
-  ("irc", "f8"),
-  ("icc", "f8"),
-  ("det", "f8"),
-  ("norm_set", "i8"),
-  ("drr", "f8"),
-  ("drc", "f8"),
-  ("dcc", "f8"),
-  ("norm", "f8"),
-  ("pnorm", "f8"),
-]
-
-_moments_result_dtype = [
-  ('flags', 'i4'),
-  ('npix', 'i4'),
-  ('wsum', 'f8'),
-  ('sums', 'f8', 6),
-  ('sums_cov', 'f8', (6, 6)),
-  ('pars', 'f8', 6),
-  ('F', 'f8', 6),
-]

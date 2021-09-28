@@ -6,7 +6,7 @@ Author: esheldon et al. (original), andrevitorelli (port)
 ver: 0.0.0
 
 """
-__all__
+
 
 import tensorflow as tf
 import numpy as np
@@ -49,7 +49,7 @@ def jacobian_get_area(jacob):
 #####make "observation" - in our case, it's just the pixels. 
 #####these don't need to be tfied
 
-def make_pixels(image, weight, jacob, ignore_zero_weight=True):
+def make_pixels(image, weight, jacob):
   """
   make a pixel array from the image and weight
   stores v,u image value, and 1/err for each pixel
@@ -72,13 +72,7 @@ def make_pixels(image, weight, jacob, ignore_zero_weight=True):
   1-d pixels array
   """
 
-  if ignore_zero_weight:
-    w = np.where(weight > 0.0)
-    npixels = w[0].size
-  else:
-    npixels = image.size
-
-  pixels = np.zeros(npixels, dtype=_pixels_dtype)
+  pixels = np.zeros(tf.size, dtype=_pixels_dtype)
 
   fill_pixels(
     pixels,
@@ -88,7 +82,7 @@ def make_pixels(image, weight, jacob, ignore_zero_weight=True):
     ignore_zero_weight=ignore_zero_weight,
   )
 
-  return pixels
+  return tf.convert_to_tensor([[*x] for x in pixels],dtype=tf.float32)
   
   
 def fill_pixels(pixels, image, weight, jacob, ignore_zero_weight=True):
