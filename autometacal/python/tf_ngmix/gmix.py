@@ -78,20 +78,22 @@ def gmix_eval_pixel_tf(gmix, pixel):
     4 = ierr
     5 = fdiff
   """
+  gmix = tf.expand_dims(tf.expand_dims(gmix,1),1)
   gmix = tf.expand_dims(gmix,1)
   # v->row, u->col in gauss
-  vdiff = pixel[:,1] - gmix[:,:,1]
-  udiff = pixel[:,0] - gmix[:,:,2]
+  vdiff = pixel[...,1] - gmix[...,1]
+  udiff = pixel[...,0] - gmix[...,2]
 
   chi2 = (
-       vdiff * vdiff * gmix[:,:,8]
-      + udiff * udiff * gmix[:,:,10]
-      - 2.0 * gmix[:,:,9] * vdiff * udiff
+       vdiff * vdiff * gmix[...,8]
+      + udiff * udiff * gmix[...,10]
+      - 2.0 * gmix[...,9] * vdiff * udiff
   )
 
-  model_val = tf.reduce_sum(gmix[:,:,-1] * tf.math.exp(-0.5 * chi2) * pixel[:,2],axis=0)
+  model_val = tf.reduce_sum(gmix[...,-1] * tf.math.exp(-0.5 * chi2) * pixel[...,2],axis=0)
 
   return model_val
+
 
 
 ####################create gmixes ######################
