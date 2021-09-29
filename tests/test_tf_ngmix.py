@@ -3,22 +3,17 @@ from numpy.testing import assert_allclose
 import autometacal
 import ngmix
 
-# Some parameters used for testing shearing transforms
-N = 100
-gal_flux = 2.5     # counts
-gal_sigma = 1.7    # arcsec
-g1 = 0.2           #
-g2 = 0.3           #
-pixel_scale = 0.2  # arcsec / pixel
 
-def test_fitting():
+scale = .2
+stamp_size=51
+Ngals = 100
+
+def test_tf_ngmix():
   """
   This test generates a simple galaxy and measure moments with ngmix, vs.
   tf_ngmix.
   """
-  scale = .2
-  stamp_size=51
-  Ngals = 100
+
   gals, _ = autometacal.data.galaxies.make_data(Ngals=100, img_noise=0.0005,
                                                  gal_g1=np.random.uniform(-.1,.1,100),
                                                  gal_g2=np.random.uniform(-.1,.1,100),
@@ -56,4 +51,4 @@ def test_fitting():
   assert_allclose(results_ngmix,result_tf_ngmix[0],rtol=1e-5)
 
 if __name__=='__main__':
-    test_fitting()
+    test_tf_ngmix()
