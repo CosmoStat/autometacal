@@ -7,7 +7,6 @@ Author: esheldon et al. (original), andrevitorelli (port)
 ver: 0.0.0
 """
 import tensorflow as tf
-import numpy as np
 from .gmix import gmix_eval_pixel_tf
   
 ######measure weighted moments  

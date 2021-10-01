@@ -8,8 +8,7 @@ ver: 0.0.0
 """
 
 import tensorflow as tf
-from numpy import nan
-import numpy as np
+
 pi = 3.141592653589793
 
 #############utilites conversions
@@ -24,7 +23,7 @@ def fwhm_to_T(fwhm):
   convert fwhm to T for a gaussian
   """
   sigma = fwhm_to_sigma(fwhm)
-  return 2 * sigma ** 2
+  return 2. * sigma * sigma
 
 def g1g2_to_e1e2(g1, g2):
   """
@@ -135,48 +134,47 @@ def create_gmix(pars,model):
 
   e1, e2 = g1g2_to_e1e2(g1, g2)
 
-  #create empty gmix
-  gmix = np.zeros([n_gauss,13])  
-
+  #new ways
   T_i_2 = 0.5 * T * fvals
   flux_i = flux * pvals
   
-  #fill vals
-  gmix[:,0] = flux_i #p
-  gmix[:,1] = row
-  gmix[:,2] = col
-  gmix[:,3] = T_i_2 * (1 - e1) #irr
-  gmix[:,4] = T_i_2 * e2 #irc
-  gmix[:,5] = T_i_2 * (1 + e1) #icc
-  gmix[:,6] = gmix[:,3] * gmix[:,5] - gmix[:,4]  * gmix[:,4] #det
-  gmix[:,7] = 0  #norm_set
-  
+  gmix0 = flux_i #p
+  gmix1 = tf.fill(n_gauss,row)
+  gmix2 = tf.fill(n_gauss,col)
+  gmix3 = T_i_2 * (1 - e1) #irr
+  gmix4 = T_i_2 * e2 #irc
+  gmix5 = T_i_2 * (1 + e1) #icc
+  gmix6 = gmix3 * gmix5 - gmix4  * gmix4 #det
+  gmix7 = tf.ones([n_gauss])  
   #set norms
-  gmix[:,8] = gmix[:,3] / gmix[:,6]
-  gmix[:,9] = gmix[:,4] / gmix[:,6]
-  gmix[:,10] = gmix[:,5] / gmix[:,6]
-  gmix[:,11] = 1.0 / (2 * pi * tf.math.sqrt(gmix[:,6]))
-  gmix[:,12] = gmix[:,0] * gmix[:,11]
-  gmix[:,7] = 1
-  
-  
+  gmix8 = gmix3 / gmix6 #drr
+  gmix9 = gmix4 / gmix6 #drc
+  gmix10 = gmix5 / gmix6 #dcc
+  gmix11 = 1.0 / (2. * pi * tf.math.sqrt(gmix6))
+  gmix12 = gmix0 * gmix11
   #set flux
-  psum = 1./gmix[:,11]   
-  psum0 = tf.reduce_sum(gmix[:,0])
+  psum = 1./gmix11 
+  psum0 = tf.reduce_sum(gmix0)
   rat = psum / psum0
-  gmix[:,0] *= rat
+  gmix0 *= rat
   # we will need to reset the pnorm values
-  gmix[:,12] = 0
-  
   #set norms again
-  gmix[:,8] = gmix[:,3] / gmix[:,6]
-  gmix[:,9] = gmix[:,4] / gmix[:,6]
-  gmix[:,10] = gmix[:,5] / gmix[:,6]
-  gmix[:,11] = 1.0 / (2 * pi * tf.math.sqrt(gmix[:,6]))
-  gmix[:,12] = gmix[:,0] * gmix[:,11]
-  gmix[:,7] = 1
+  gmix8 = gmix3 / gmix6
+  gmix9 = gmix4 / gmix6
+  gmix10 = gmix5 / gmix6
+  gmix11 = 1.0 / (2 * pi * tf.math.sqrt(gmix6))
+  gmix12 = gmix0 * gmix11
+  
+  things = [gmix0,gmix1,gmix2,gmix3,gmix4,gmix5,gmix6,gmix7,gmix8,gmix9,gmix10,gmix11,gmix12]
+  result = tf.stack(things,axis=-1)
+  
+  
+  #old ways
+
+  
+  #print(tf.convert_to_tensor([[*gauss] for gauss in gmix],dtype=tf.float32))
    
-  return tf.convert_to_tensor([[*gauss] for gauss in gmix],dtype=tf.float32)
+  return result#tf.convert_to_tensor([[*gauss] for gauss in gmix],dtype=tf.float32)
 
 _pvals_exp = tf.convert_to_tensor(
   [

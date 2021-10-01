@@ -7,27 +7,31 @@ ver: 0.0.0
 
 """
 
-
 import tensorflow as tf
-import numpy as np
-def make_pixels(image, weight, centre,pixel_scale):
+
+
+def make_pixels(images, weights, centre, pixel_scale):
   
-  #img shape
-  img_x_size, img_y_size = image.shape[-2:]
+  batch_size = images.shape[0]
+  
+  #image shape info
+  img_x_size, img_y_size = images.shape[-2:]
   img_size = img_x_size * img_y_size
 
-  #apply diagonal jacobian
+  #apply jacobian (currently constant!)
   centre_x = centre[0]
   centre_y = centre[1]
-  
   X,Y = tf.cast(tf.meshgrid(tf.range(img_x_size),tf.range(img_y_size)),tf.float32)
   X = (X-centre_x)*pixel_scale
   Y = (Y-centre_y)*pixel_scale
+  Xs=tf.tile(X[tf.newaxis],[batch_size,1,1])
+  Ys=tf.tile(Y[tf.newaxis],[batch_size,1,1])
   
   #fill pixels
-  pixels = tf.stack([tf.reshape(X,-1),
-            tf.reshape(Y,-1),
-            tf.fill(img_size,pixel_scale*pixel_scale), 
-            tf.reshape(gal,-1),
-            tf.reshape(weight,-1)],axis=1)
+  pixels = tf.stack([tf.reshape(Xs,[batch_size,-1]),
+            tf.reshape(Ys,[batch_size,-1]),
+            tf.fill([batch_size,img_size],pixel_scale*pixel_scale), 
+            tf.reshape(images,[batch_size,-1]),
+            tf.reshape(weights,[batch_size,-1])],axis=-1)
+  
   return pixels
