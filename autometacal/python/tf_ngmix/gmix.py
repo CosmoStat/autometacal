@@ -49,7 +49,6 @@ def g1g2_to_e1e2(g1, g2):
   return e1, e2 
 
 ###################evaluate pixels#####################################
-
 def gmix_eval_pixel_tf(gmix, pixel):
   """
   evaluate a 2-d gaussian at the specified location
@@ -92,8 +91,6 @@ def gmix_eval_pixel_tf(gmix, pixel):
   model_val = tf.reduce_sum(gmix[...,-1] * tf.math.exp(-0.5 * chi2) * pixel[...,2],axis=0)
 
   return model_val
-
-
 
 ####################create gmixes ######################
 def create_gmix(pars,model):
@@ -167,15 +164,10 @@ def create_gmix(pars,model):
   
   things = [gmix0,gmix1,gmix2,gmix3,gmix4,gmix5,gmix6,gmix7,gmix8,gmix9,gmix10,gmix11,gmix12]
   result = tf.stack(things,axis=-1)
-  
-  
-  #old ways
+    
+  return result
 
-  
-  #print(tf.convert_to_tensor([[*gauss] for gauss in gmix],dtype=tf.float32))
-   
-  return result#tf.convert_to_tensor([[*gauss] for gauss in gmix],dtype=tf.float32)
-
+#predefs
 _pvals_exp = tf.convert_to_tensor(
   [
     0.00061601229677880041,
