@@ -3,6 +3,10 @@ import tensorflow as tf
 from tensorflow.python.ops.gen_batch_ops import batch
 import galflow as gf
 import numpy as np
+from .tf_ngmix.moments import get_moments
+from .tf_ngmix.gmix import create_gmix,  fwhm_to_T
+from .tf_ngmix.pixels import make_pixels
+
 
 def generate_mcal_image(gal_image,
                         psf_image,
@@ -61,8 +65,7 @@ def generate_mcal_image(gal_image,
 
 def get_metacal_response(gal_image,
                          psf_image,
-                         reconvolution_psf_image,
-                         method):
+                         reconvolution_psf_image,method):
   """
   Convenience function to compute the shear response
   """  
@@ -85,11 +88,11 @@ def get_metacal_response(gal_image,
 
 def get_metacal_response_finitediff(gal_image,psf_image,reconv_psf_image,step,method):
   
-  img0s = autometacal.generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[0,0]]) 
-  img1p = autometacal.generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[step,0]]) 
-  img1m = autometacal.generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[-step,0]]) 
-  img2p = autometacal.generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[0,step]]) 
-  img2m = autometacal.generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[0,-step]]) 
+  img0s = generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[0,0]]) 
+  img1p = generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[step,0]]) 
+  img1m = generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[-step,0]]) 
+  img2p = generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[0,step]]) 
+  img2m = generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[0,-step]]) 
   
   g0s = method(img0s)
   g1p = method(img1p)
@@ -106,35 +109,3 @@ def get_metacal_response_finitediff(gal_image,psf_image,reconv_psf_image,step,me
   R = np.array([[d11,d21],
                 [d12,d22]]).T
   return g0s, R
-
-def get_ellipticities(img,frac=.1):
-  img_size = len(img[0])
-  nx = img_size
-  ny = img_size
-  XX=zeros((nx,ny))
-  XY=zeros((nx,ny))
-  YY=zeros((nx,ny))
-  w = zeros((nx,ny))
-  sigma=img_size*frac
-  
-  for i in range(0,nx):
-      x=0.5+i-(nx)/2.0
-      for j in range(0,ny):
-          y=0.5+j-(ny)/2.0
-          XX[i,j]=x*x
-          XY[i,j]=x*y
-          YY[i,j]=y*y
-          w[i,j]=np.exp(-((x) ** 2 + (y) ** 2) /
-                                 (2 * sigma ** 2))
-  
-
-  norm = tf.reduce_sum(tf.reduce_sum(w*img, axis=-1), axis=-1)
-  Q11 = tf.reduce_sum(tf.reduce_sum(w*img*YY, axis=-1), axis=-1)/norm
-  Q12 = tf.reduce_sum(tf.reduce_sum(w*img*XY, axis=-1), axis=-1)/norm
-  Q21 = Q12
-  Q22 = tf.reduce_sum(tf.reduce_sum(w*img*XX, axis=-1), axis=-1)/norm
-  q1 = Q11 - Q22
-  q2 = 2*Q12
-  T= Q11 + Q22  + 2*tf.sqrt(abs(Q11*Q22 - Q12**2))
-  r = tf.stack([q1/T, q2/T], axis=-1)
-  return r
