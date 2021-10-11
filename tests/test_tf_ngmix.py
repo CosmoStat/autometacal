@@ -14,9 +14,9 @@ def test_tf_ngmix():
   tf_ngmix.
   """
 
-  gals, _ = autometacal.data.galaxies.make_data(Ngals=Ngals, img_noise=0.0005,
-                                                 gal_g1=np.random.uniform(-.1,.1,100),
-                                                 gal_g2=np.random.uniform(-.1,.1,100),
+  gals, _ = autometacal.datasets.galaxies.make_data(Ngals=Ngals, snr=100,
+                                                 gal_g1=np.random.uniform(-.7,.7,Ngals),
+                                                 gal_g2=np.random.uniform(-.7,.7,Ngals),
                                                  scale=scale)
 
   weight_fwhm = scale*stamp_size/2 # <- this sets everything for the window function
@@ -30,7 +30,8 @@ def test_tf_ngmix():
                                                                         scale=scale))
     results_ngmix.append(fitter._measure_moments(obs)['e'])
 
-
+  results_ngmix = np.array(results_ngmix)
+  
   #our version:
   pix_weights = tf.ones([Ngals,stamp_size,stamp_size])
   pixels = autometacal.tf_ngmix.make_pixels(
@@ -41,9 +42,9 @@ def test_tf_ngmix():
   )
   T = autometacal.tf_ngmix.fwhm_to_T(weight_fwhm)
   weights = autometacal.tf_ngmix.create_gmix([0.,0.,0.,0.,T,1.],'gauss')
-  result_tf_ngmix =autometacal.tf_ngmix.get_moments(weights,pixels)
+  result_tf_ngmix = autometacal.tf_ngmix.get_moments(weights,pixels)
   
-  assert_allclose(results_ngmix,result_tf_ngmix[0],rtol=1e-4)
+  assert_allclose(results_ngmix,result_tf_ngmix,rtol=1e-6,atol=1e-6)
 
 if __name__=='__main__':
     test_tf_ngmix()
