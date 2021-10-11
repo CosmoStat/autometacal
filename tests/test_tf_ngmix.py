@@ -6,7 +6,7 @@ import ngmix
 
 scale = .2
 stamp_size=51
-Ngals = 100
+Ngals = 1000
 
 def test_tf_ngmix():
   """
