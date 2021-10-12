@@ -244,7 +244,7 @@ def make_data(Ngals=1,
     psf_image = psf.drawImage(nx=stamp_size, ny=stamp_size, scale=scale).array
     gal_image = obj.drawImage(nx=stamp_size, ny=stamp_size, scale=scale)
     noise = galsim.GaussianNoise()
-    gal_image.addNoiseSNR(noise,snr=snr)
+    #gal_image.addNoiseSNR(noise,snr=snr)
     
     gal_image = tf.convert_to_tensor(gal_image.array)
     psf_image = tf.convert_to_tensor(psf_image)
