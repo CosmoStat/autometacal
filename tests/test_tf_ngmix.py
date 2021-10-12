@@ -2,7 +2,8 @@
 from numpy.testing import assert_allclose
 import autometacal
 import ngmix
-
+import numpy as np
+import tensorflow as tf
 
 scale = .2
 stamp_size=51
