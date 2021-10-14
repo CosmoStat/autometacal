@@ -23,7 +23,7 @@ def test_tf_ngmix():
   weight_fwhm = scale*stamp_size/2 # <- this sets everything for the window function
   results_ngmix=[]
   
-  #ngmix version  
+  # ngmix version  
   fitter = ngmix.gaussmom.GaussMom(fwhm=weight_fwhm)
   for gal in gals:
     obs = ngmix.Observation(gal.numpy(),jacobian=ngmix.DiagonalJacobian(row=stamp_size//2, 
@@ -33,17 +33,8 @@ def test_tf_ngmix():
 
   results_ngmix = np.array(results_ngmix)
   
-  #our version:
-  pix_weights = tf.ones([Ngals,stamp_size,stamp_size])
-  pixels = autometacal.tf_ngmix.make_pixels(
-    gals, 
-    pix_weights, 
-    [stamp_size//2,stamp_size//2],
-    .2
-  )
-  T = autometacal.tf_ngmix.fwhm_to_T(weight_fwhm)
-  weights = autometacal.tf_ngmix.create_gmix([0.,0.,0.,0.,T,1.],'gauss')
-  result_tf_ngmix = autometacal.tf_ngmix.get_moments(weights,pixels)
+  # our version:
+  result_tf_ngmix = autometacal.gaussian_moments(gals, scale=0.2, fwhm=weight_fwhm)
   
   assert_allclose(results_ngmix,result_tf_ngmix,rtol=1e-6,atol=1e-6)
 
