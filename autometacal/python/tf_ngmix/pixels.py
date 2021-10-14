@@ -16,8 +16,7 @@ def make_pixels(images, weights, centre, pixel_scale):
   
   #image shape info
   img_size = img_x_size * img_y_size
-  print(img_x_size)
-  print(tf.range(img_x_size))
+  
   #apply jacobian (currently constant!)
   centre_x = centre[0]
   centre_y = centre[1]
