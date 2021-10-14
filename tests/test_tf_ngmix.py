@@ -34,8 +34,10 @@ def test_tf_ngmix():
   results_ngmix = np.array(results_ngmix)
   
   # our version:
-  result_tf_ngmix = autometacal.gaussian_moments(gals, scale=0.2, fwhm=weight_fwhm)
-  
+  @tf.function
+  def get_ellipticity(im):
+    return autometacal.gaussian_moments(im, scale=0.2, fwhm=weight_fwhm)
+  result_tf_ngmix = get_ellipticity(gals)
   assert_allclose(results_ngmix,result_tf_ngmix,rtol=1e-6,atol=1e-6)
 
 if __name__=='__main__':
