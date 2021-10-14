@@ -113,12 +113,12 @@ def create_gmix(pars,model):
   """
   
   if model == 'gauss':
-    n_gauss = 1
+    n_gauss = [1]
     fvals =  _fvals_gauss
     pvals = _pvals_gauss
   
   if model == 'exp':
-    n_gauss = 6
+    n_gauss = [6]
     fvals = _fvals_exp
     pvals = _pvals_exp
 
@@ -142,7 +142,7 @@ def create_gmix(pars,model):
   gmix4 = T_i_2 * e2 #irc
   gmix5 = T_i_2 * (1 + e1) #icc
   gmix6 = gmix3 * gmix5 - gmix4  * gmix4 #det
-  gmix7 = tf.ones([n_gauss])  
+  gmix7 = tf.ones(n_gauss)  
   #set norms
   gmix8 = gmix3 / gmix6 #drr
   gmix9 = gmix4 / gmix6 #drc
