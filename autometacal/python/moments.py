@@ -4,6 +4,21 @@ from .tf_ngmix.pixels import make_pixels
 import tensorflow as tf
 
 def get_moment_ellipticities(images, scale, fwhm, **kwargs):
+  """
+  Gets ellipticity estimates from gaussian moments of stamps.
+  
+  Args:
+    images: A bach of images Tensor
+    scale: pixel scale
+    fwhm: full width at half maximum of the gaussian filter
+    centre_x, centre_y: centre of the image, if ommited, the centre pixel of the stamp is used.
+    weights: an image containing the weights of the
+    
+  Returns:
+    Gaussian-weighted moments: e1, e2 for the batch of images. according to the a+b/()
+    
+  """  
+  
   Q11, Q12, Q22  = gaussian_moments(images, scale, fwhm, **kwargs)
   
   q1 = Q11 - Q22
@@ -15,6 +30,21 @@ def get_moment_ellipticities(images, scale, fwhm, **kwargs):
 
 
 def gaussian_moments(images, scale, fwhm, **kwargs):
+  """
+  Gets gaussian moments of stamps.
+  
+  Args:
+    images: A bach of images Tensor
+    scale: pixel scale
+    fwhm: full width at half maximum of the gaussian filter
+    centre_x, centre_y: centre of the image, if ommited, the centre pixel of the stamp is used.
+    weights: an image containing the weights of the
+    
+  Returns:
+    Gaussian-weighted moments: Q11, Q12 and Q22 for the batch of images.
+    
+  """
+  
   defaults = {
     'centre_x' : images.shape[-2]//2,
     'centre_y' : images.shape[-1]//2,
