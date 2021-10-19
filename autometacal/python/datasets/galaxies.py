@@ -43,3 +43,4 @@ def make_data(Ngals=1,
   psf_image_stack = tf.stack(psf_list)
   
   return gal_image_stack, psf_image_stack
+
