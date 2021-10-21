@@ -21,7 +21,7 @@ def get_moment_ellipticities(images, scale, fwhm, **kwargs):
     
   Returns:
     Ellipticities: tf.Tensor
-      A batch of ellipticities according to the |e| = (a**2 - b**2)/(a**2 + b**2) convention.
+      A batch of ellipticities according to the |g| = (a - b)/(a + b) convention.
     
   """  
   
@@ -29,14 +29,15 @@ def get_moment_ellipticities(images, scale, fwhm, **kwargs):
   
   q1 = Q11 - Q22
   q2 = 2*Q12
-  T= Q11 + Q22 # chi/distortion/e convention 
+  T= Q11  + Q22 + 2*tf.math.sqrt(tf.math.abs(Q11*Q22-Q12*Q12)) # g convention 
   
-  e1 = q1/T
-  e2 = q2/T
+  g1 = q1/T
+  g2 = q2/T
   
-  result = tf.stack([e1,e2 ], axis=-1)[0]
+  result = tf.stack([g1,g2], axis=-1)[0]
    
   return result
+
 
 
 def gaussian_moments(images, scale, fwhm, **kwargs):
