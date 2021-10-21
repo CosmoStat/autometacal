@@ -11,9 +11,12 @@ def fit_multivariate_gaussian(image, pixel_scale, update_params=None):
   Estimate galaxy parameters by fitting a multivariate gaussian
 
   Args:
-      image: galaxy image to fit (numpy array of tf tensor)
-      pixel_scale
-      update_params: dictionary of optimizer parameters ex: {'lr': .1}
+      image: np.array or tf tensor
+        galaxy image to fit 
+      pixel_scale: float
+        pixel scale in arcsec/pixel
+      update_params: dictionary 
+        optimizer parameters ex: {'lr': .1}
 
   Returns:
       z_star: MultivariateNormalTriL params
