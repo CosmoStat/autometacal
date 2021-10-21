@@ -52,29 +52,33 @@ def g1g2_to_e1e2(g1, g2):
 def gmix_eval_pixel_tf(gmix, pixel):
   """
   evaluate a 2-d gaussian at the specified location
-  parameters
-  ----------
-  gauss2d: gauss2d structure:
-    0 ='p',
-    1 = 'row',
-    2 = 'col',
-    3 = 'irr',
-    4 = 'irc',
-    5 = 'icc',
-    6 = 'det',
-    7 = 'norm_set',
-    8 = 'drr',
-    9 = 'drc',
-    10 ='dcc',
-    11 ='norm',
-    12 ='pnorm'
-  pixel: struct with coords u, v
-    0 = u,
-    1 = v,
-    2 = area
-    3 = val
-    4 = ierr
-    5 = fdiff
+  Args:
+    gauss2d: tf.Tensor
+      gauss2d structure:
+      0 ='p',
+      1 = 'row',
+      2 = 'col',
+      3 = 'irr',
+      4 = 'irc',
+      5 = 'icc',
+      6 = 'det',
+      7 = 'norm_set',
+      8 = 'drr',
+      9 = 'drc',
+      10 ='dcc',
+      11 ='norm',
+      12 ='pnorm'
+    pixel: tf.Tensor
+      struct with coords u, v
+      0 = u,
+      1 = v,
+      2 = area
+      3 = val
+      4 = ierr
+      5 = fdiff
+  Returns:
+    model_val: tf.Tensor
+      (batch_size,nx*ny) evaluations of pixels at u,v positions
   """
   gmix = tf.expand_dims(tf.expand_dims(gmix,1),1)
   gmix = tf.expand_dims(gmix,1)
@@ -95,8 +99,17 @@ def gmix_eval_pixel_tf(gmix, pixel):
 ####################create gmixes ######################
 def create_gmix(pars,model):
   """
-  returns:
-    gauss2d: gauss2d structure:
+  Build a profile from a mixture of gaussians
+  
+  Args:
+    pars: list, np.array or Tensor
+      Model parameters
+    model: str
+      model name
+  
+  returns: tf.Tensor
+    mixture of gaussians containing (ngaussians,13):
+    structure:
     0 ='p',
     1 = 'row',
     2 = 'col',
