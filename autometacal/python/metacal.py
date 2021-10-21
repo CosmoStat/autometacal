@@ -4,8 +4,8 @@ from tensorflow.python.ops.gen_batch_ops import batch
 import galflow as gf
 import numpy as np
 
-def generate_mcal_image(gal_images,
-                        psf_images,
+def generate_mcal_image(gal_image,
+                        psf_image,
                         reconvolution_psf_image,
                         g):
   """ Generate a metacalibrated image given input and target PSFs.
@@ -26,8 +26,8 @@ def generate_mcal_image(gal_images,
   
   """
   #convert and cast
-  gal_images = tf.convert_to_tensor(gal_images, dtype=tf.float32)
-  psf_images = tf.convert_to_tensor(psf_images, dtype=tf.float32)
+  gal_image = tf.convert_to_tensor(gal_image, dtype=tf.float32)
+  psf_image = tf.convert_to_tensor(psf_image, dtype=tf.float32)
   reconvolution_psf_image = tf.convert_to_tensor(reconvolution_psf_image, dtype=tf.float32)
   
   
