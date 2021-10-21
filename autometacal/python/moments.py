@@ -8,14 +8,20 @@ def get_moment_ellipticities(images, scale, fwhm, **kwargs):
   Gets ellipticity estimates from gaussian moments of stamps.
   
   Args:
-    images: A bach of images Tensor
-    scale: pixel scale
-    fwhm: full width at half maximum of the gaussian filter
-    centre_x, centre_y: centre of the image, if ommited, the centre pixel of the stamp is used.
-    weights: an image containing the weights of the
+    images: tf.Tensor
+      A bach of images as a (batch_size,nx,ny) tf tensor.
+    scale: float
+      The pixel scale of the image in arcsec/pixelk
+    fwhm: float
+      The full width at half maximum of the gaussian filter in arcseconds
+    centre_x, centre_y: floats
+     Centre of the image in pixels, if ommited, the centre pixel of the stamp is used.
+    weights: tf.Tensor
+      An image containing the weights of the pixels.
     
   Returns:
-    Gaussian-weighted moments: e1, e2 for the batch of images. according to the a+b/()
+    Ellipticities: tf.Tensor
+      A batch of ellipticities according to the |e| = (a**2 - b**2)/(a**2 + b**2) convention.
     
   """  
   
@@ -23,8 +29,12 @@ def get_moment_ellipticities(images, scale, fwhm, **kwargs):
   
   q1 = Q11 - Q22
   q2 = 2*Q12
-  T= Q11 + Q22 
-  result = tf.stack([q1/T, q2/T], axis=-1)[0]
+  T= Q11 + Q22 # chi/distortion/e convention 
+  
+  e1 = q1/T
+  e2 = q2/T
+  
+  result = tf.stack([e1,e2 ], axis=-1)[0]
    
   return result
 
