@@ -4,25 +4,33 @@ from tensorflow.python.ops.gen_batch_ops import batch
 import galflow as gf
 import numpy as np
 
-def generate_mcal_image(gal_image,
-                        psf_image,
+def generate_mcal_image(gal_images,
+                        psf_images,
                         reconvolution_psf_image,
                         g):
   """ Generate a metacalibrated image given input and target PSFs.
   
   Args: 
-    gal_image: (batch_size, N, N ) tensor image of galaxies
-    psf_image: (batch_size, N, N ) tensor image of psf model
-    reconvolution_psf_image: (batch_size, N, N ) tensor of target psf model
-    g: [batch_size, 2] tensor of input shear
+    gal_image: tf.Tensor or np.array
+      (batch_size, N, N ) image of galaxies
+    psf_image: tf.Tensor or np.array
+      (batch_size, N, N ) image of psf model
+    reconvolution_psf_image: tf.Tensor
+      (N, N ) tensor of reconvolution psf model
+    g: tf.Tensor or np.array
+    [batch_size, 2] input shear
   Returns:
-    tf tensor containing image of galaxy after deconvolution by 
-    psf_deconv, shearing by g, and reconvolution with reconvolution_psf_image
+    img: tf.Tensor
+      tf tensor containing image of galaxy after deconvolution by psf_deconv, 
+      shearing by g, and reconvolution with reconvolution_psf_image.
   
   """
-  gal_image = tf.convert_to_tensor(gal_image, dtype=tf.float32)
-  psf_image = tf.convert_to_tensor(psf_image, dtype=tf.float32)
+  #convert and cast
+  gal_images = tf.convert_to_tensor(gal_images, dtype=tf.float32)
+  psf_images = tf.convert_to_tensor(psf_images, dtype=tf.float32)
   reconvolution_psf_image = tf.convert_to_tensor(reconvolution_psf_image, dtype=tf.float32)
+  
+  
   g = tf.convert_to_tensor(g, dtype=tf.float32)
   batch_size, nx, ny = gal_image.get_shape().as_list()
 
