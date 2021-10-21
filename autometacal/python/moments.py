@@ -15,7 +15,7 @@ def get_moment_ellipticities(images, scale, fwhm, **kwargs):
     weights: an image containing the weights of the
     
   Returns:
-    Gaussian-weighted moments: e1, e2 for the batch of images. according to the a+b/()
+    Gaussian-weighted moments: g1, g2 for the batch of images. according to the a+b/()
     
   """  
   
@@ -23,7 +23,7 @@ def get_moment_ellipticities(images, scale, fwhm, **kwargs):
   
   q1 = Q11 - Q22
   q2 = 2*Q12
-  T= Q11 + Q22 
+  T = Q11  + Q22 + 2*tf.math.sqrt(tf.math.abs(Q11*Q22-Q12*Q12))
   result = tf.stack([q1/T, q2/T], axis=-1)[0]
    
   return result

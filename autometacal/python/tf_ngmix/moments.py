@@ -26,10 +26,7 @@ def get_moments(weights, pixels):
   Q22 = tf.reduce_sum(w*pixels[...,3]*pixels[...,1]*pixels[...,1], axis=-1)/norm
   Q21 = Q12
 
-  q1 = Q11 - Q22
-  q2 = 2*Q12
-  T= Q11 + Q22 
-  r = tf.stack([q1/T, q2/T], axis=-1)[0]
+
     
-  return r 
+  return Q11, Q12, Q22 
   
