@@ -56,8 +56,8 @@ class GalGen(tfds.core.GeneratorBasedBuilder):
                    stamp_size=51, 
                    pixel_scale=.2, 
                    flux=1.e5),
-      GalGenConfig(name="simple_100k", 
-                   dataset_size=100000, 
+      GalGenConfig(name="simple_1k", 
+                   dataset_size=1000, 
                    stamp_size=51, 
                    pixel_scale=.2, 
                    flux=1.e5),
@@ -114,7 +114,7 @@ class GalGen(tfds.core.GeneratorBasedBuilder):
         g1_list.append(g1)
         g2_list.append(g2)
     
-    gals, psfs = make_data(
+    gals, psfs = simple_batch(
       Ngals=dataset_size,
       snr = 100,
       scale = pixel_scale,
