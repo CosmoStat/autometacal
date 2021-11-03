@@ -3,7 +3,7 @@ import tensorflow_datasets as tfds
 import tensorflow as tf
 import numpy as np
 from scipy.stats import truncnorm
-from .galaxies import make_data
+from .galaxies import simple
 
 _DESCRIPTION = "This tfds generates random toy-model galaxy stamps."
 _CITATION = "{NEEDED}"
@@ -12,11 +12,11 @@ _URL = "https://github.com/CosmoStat/autometacal"
 class GalGenConfig(tfds.core.BuilderConfig):
   """BuilderConfig for GalGen."""
 
-  def __init__(self, 
+  def __init__(self,
                *,
-               dataset_size=None, 
-               stamp_size=None, 
-               pixel_scale=None, 
+               dataset_size=None,
+               stamp_size=None,
+               pixel_scale=None,
                flux=None,
                **kwargs):
     """BuilderConfig for SQUAD.
@@ -46,20 +46,20 @@ class GalGenConfig(tfds.core.BuilderConfig):
 class GalGen(tfds.core.GeneratorBasedBuilder):
   """Random galaxy image generator."""
 
-  MANUAL_DOWNLOAD_INSTRUCTIONS = """\ 
+  MANUAL_DOWNLOAD_INSTRUCTIONS = """\
   Nothing to download. DataSet is generated at first call.
   """
 
   BUILDER_CONFIGS = [
-      GalGenConfig(name="simple_100", 
-                   dataset_size=100, 
-                   stamp_size=51, 
-                   pixel_scale=.2, 
+      GalGenConfig(name="simple_100",
+                   dataset_size=100,
+                   stamp_size=51,
+                   pixel_scale=.2,
                    flux=1.e5),
-      GalGenConfig(name="simple_1k", 
-                   dataset_size=1000, 
-                   stamp_size=51, 
-                   pixel_scale=.2, 
+      GalGenConfig(name="simple_1k",
+                   dataset_size=1000,
+                   stamp_size=51,
+                   pixel_scale=.2,
                    flux=1.e5),
    ]
 
@@ -100,35 +100,29 @@ class GalGen(tfds.core.GeneratorBasedBuilder):
   def _generate_examples(self, dataset_size, stamp_size, pixel_scale, flux):
     """Yields examples."""
     np.random.seed(31415)
-    
+
     a, b = -.7/.3, .7/.3 #(max_ellip/ellip_sigma)
-    
-    g1_list = []
-    g2_list = []
+
+
     for i in range(dataset_size):
-      #select ellipticities, ensure g<=1
       g1=g2=1
       while g1**2+g2**2>1:
         g1 = truncnorm.rvs(a, b, loc=0, scale=.3)
         g2 = truncnorm.rvs(a, b, loc=0, scale=.3)
-        g1_list.append(g1)
-        g2_list.append(g2)
-    
-    gals, psfs = simple_batch(
-      Ngals=dataset_size,
-      snr = 100,
-      scale = pixel_scale,
-      stamp_size = stamp_size,
-      psf_fwhm = 0.9,
-      gal_hlr = 0.7,
-      gal_g1 = g1_list,
-      gal_g2 = g2_list, 
-      flux=flux
-    )
+      
+      gals, psfs = simple(
+        snr = 100,
+        scale = pixel_scale,
+        stamp_size = stamp_size,
+        psf_fwhm = 0.9,
+        gal_hlr = 0.7,
+        gal_g1 = g1,
+        gal_g2 = g2,
+        flux=flux
+      )
 
-    for i in range(dataset_size):
       
       #get example
-      yield '%d'%i, {'gal_image': gals[i].numpy(), #galaxy image
-                     'psf_image': psfs[i].numpy(), #psf image 
-                     'label': [g1_list[i],g2_list[i]]} #ellipticity
+      yield '%d'%i, {'gal_image': gal.numpy(), #galaxy image
+                     'psf_image': psf.numpy(), #psf image
+                     'label': [g1,g2]} #ellipticity

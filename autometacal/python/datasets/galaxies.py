@@ -8,40 +8,118 @@ Simple wrappers for toy galaxy generation
 Functions with gs_ prefix depend on galsim
 """
 
-def simple_batch(Ngals=1,
-  snr = 100,
-  scale = 0.2,
-  stamp_size = 51,
-  psf_fwhm = 0.9,
+def simple(
+  snr = 100.,
   gal_hlr = 0.7,
-  gal_g1 = [0],
-  gal_g2 = [0], 
-  flux=1.e5):
-  """Simple exponetial profile toy model galaxy"""
-  
-  gal_list = []
-  psf_list = []
- 
-  for n in range(Ngals):
-    psf = galsim.Kolmogorov(fwhm=psf_fwhm)
-    obj0 = galsim.Exponential(half_light_radius=gal_hlr,flux=flux).shear(g1=gal_g1[n],g2=gal_g2[n])
-    obj = galsim.Convolve(psf, obj0)
+  gal_g1 = 0.,
+  gal_g2 = 0.,
+  psf_g1 = 0.,
+  psf_g2 = 0.,
+  flux = 1.,
+  **kwargs
+):
+  """Simple exponential profile toy model galaxy"""
 
-    psf_image = psf.drawImage(nx=stamp_size, ny=stamp_size, scale=scale).array
-    gal_image = obj.drawImage(nx=stamp_size, ny=stamp_size, scale=scale)
-    noise = galsim.GaussianNoise()
-    gal_image.addNoiseSNR(noise,snr=snr,preserve_flux=True)
+  #defaults are those expected to not vary much inside a sample
+  defaults = {
+    'scale' : 0.2,
+    'stamp_size' : 51,
+    'psf_fwhm' : 0.9, 
+  }
+  defaults.update(kwargs)
+  
+  #create gal, psf & convolve
+  gal = galsim.Exponential(half_light_radius=gal_hlr,flux=flux).shear(g1=gal_g1,g2=gal_g2)
+  psf = galsim.Kolmogorov(fwhm=defaults['psf_fwhm']).shear(g1=psf_g1,g2=psf_g2)
+  obs = galsim.Convolve(psf, gal)
+  
+  #draw gal & psf, add noise to the result
+  psf_image = psf.drawImage(nx=defaults['stamp_size'], 
+                            ny=defaults['stamp_size'], 
+                            scale=defaults['scale'])
+  gal_image = obs.drawImage(nx=defaults['stamp_size'], 
+                            ny=defaults['stamp_size'], 
+                            scale=defaults['scale'])
+  noise = galsim.GaussianNoise()
+  gal_image.addNoiseSNR(noise,snr=snr,preserve_flux=True)
+  
+  #make them into tensors
+  gal_image = tf.convert_to_tensor(gal_image.array)
+  psf_image = tf.convert_to_tensor(psf_image.array)
+
+  return gal_image, psf_image
+
+def bulge_plus_disk(
+  snr = 100.,
+  bulge_hlr = .2,
+  disk_hlr = .7,
+  bulge_frac = 0.4,
+  knot_disk_frac = 0.7,
+  n_knots = 100,
+  bulge_e1 = 0.,
+  bulge_e2 = 0.,
+  disk_e1 = 0.,
+  disk_e2 = 0.,
+  gal_g1 = 0.,
+  gal_g2 = 0.,
+  gal_flux = 1.,
+  **kwargs
+):
+  """Bulge plus disk profile galaxy"""
+
+  #defaults are those expected to not vary much inside a sample
+  defaults = {
+    'scale' : 0.2,
+    'stamp_size' : 51,
+    'psf_fwhm' : 0.9,
+    'psf_e1' : 0.,
+    'psf_e2' :  0.,
+  }
+  
+  disk_frac   = 1 - bulge_frac
+  smooth_disk_frac = 1 - knot_disk_frac 
+  
+  defaults.update(kwargs)
+   
+  #create a bulge
+  bulge = galsim.DeVaucouleurs(flux=bulge_frac, 
+                               half_light_radius=bulge_hlr).shear(e1=bulge_e1, 
+                                                                  e2=bulge_e2)
+  
+  
+  #the disk is composed of a knotted part and a smooth part
+  smooth_disk = galsim.Exponential(flux=smooth_disk_frac, 
+                                   half_light_radius=disk_hlr)
+
+  knotted_disk = galsim.RandomKnots(n_knots, 
+                                    half_light_radius=disk_hlr, 
+                                    flux=knot_disk_frac,) 
+                                    #rng=rng)
+        
+  disk = galsim.Add([knotted_disk,smooth_disk]).shear(e1=disk_e1, 
+                                                      e2=disk_e2)
     
-    gal_image = tf.convert_to_tensor(gal_image.array)
-    psf_image = tf.convert_to_tensor(psf_image)
-    gal_list.append(gal_image)
-    psf_list.append(psf_image)    
+  gal = galsim.Add([bulge,disk]).shear(g1=gal_g1, 
+                                               g2=gal_g2).withFlux(gal_flux)
+  #create psf & convolve
+  psf = galsim.Kolmogorov(fwhm=defaults['psf_fwhm'])
+  obj = galsim.Convolve(psf, gal)
   
-  gal_image_stack = tf.stack(gal_list)
-  psf_image_stack = tf.stack(psf_list)
+  #draw gal & psf, add noise to the result
+  psf_image = psf.drawImage(nx=defaults['stamp_size'], 
+                            ny=defaults['stamp_size'], 
+                            scale=defaults['scale'])
+  gal_image = obj.drawImage(nx=defaults['stamp_size'], 
+                            ny=defaults['stamp_size'], 
+                            scale=defaults['scale'])
+  noise = galsim.GaussianNoise()
+  gal_image.addNoiseSNR(noise,snr=snr,preserve_flux=True)
   
-  return gal_image_stack, psf_image_stack
+  #make them into tensors
+  gal_image = tf.convert_to_tensor(gal_image.array)
+  psf_image = tf.convert_to_tensor(psf_image.array)
 
+  return gal_image, psf_image
 
 def parametric_cosmos(ccat,j, **kwargs):
   """Creates CFIS-like images out of the parametric COSMOS galaxies."""
@@ -108,49 +186,3 @@ def real_cosmos(ccat,j, **kwargs):
   psf_img = psf.drawImage(nx=stamp_size, ny=stamp_size, scale=pixel_scale, method='fft')
   #print(f"s2n: {s2n} (in galsim system)")
   return gal_img.array, psf_img.array
-
-
-
-def original_cosmos(ccat,Ngals):
-  """Just cutting stamps from the original gal image from HST"""
-  gal_list = []
-  psf_list = []
-  n=0
-  list_length = 0
-  size=51
-
-  while list_length < Ngals:
-    gal=ccat.makeGalaxy(n)
-        
-    if (
-      (min(gal.original_gal.image.array.shape) >= size) & 
-      (min(gal.psf_image.array.shape) >= size) 
-    ):
-      centre_x_gal = gal.original_gal.image.array.shape[0]//2
-      centre_y_gal = gal.original_gal.image.array.shape[1]//2
-      
-      centre_x_psf = gal.psf_image.array.shape[0]//2
-      centre_y_psf = gal.psf_image.array.shape[1]//2
-      
-      psf_image = tf.convert_to_tensor(gal.psf_image.array[centre_x_psf - size //2 :
-                                                           centre_x_psf + 1 + size //2 ,
-                                                           centre_y_psf - size //2 :
-                                                           centre_y_psf + 1 + size //2 ],
-                                       dtype=tf.float32)
-      gal_image = tf.convert_to_tensor(gal.gal_image.array[centre_x_gal - size //2 :
-                                                           centre_x_gal + 1  + size //2,
-                                                           centre_y_gal - size //2 :
-                                                           centre_y_gal + 1 + size //2 ],
-                                       dtype=tf.float32)
-      gal_list.append(gal_image)
-      psf_list.append(psf_image)
-      list_length += 1
-      
-    else:
-      print(min(gal.original_gal.image.array.shape),min(gal.psf_image.array.shape),end="\r")
-    n += 1
-
-  gal_image_stack = tf.stack(gal_list)
-  psf_image_stack = tf.stack(psf_list)
-  return gal_image_stack, psf_image_stack
-
