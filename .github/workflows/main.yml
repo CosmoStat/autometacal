@@ -49,9 +49,10 @@ jobs:
             flake8 \
             scipy \
             pytest \
-            galsim
+            galsim \
+            ngmix
           
-          python -m pip install tensorflow==2.5.0 tensorflow_addons==0.13.0
+          python -m pip install tensorflow==2.5.0 tensorflow_addons==0.13.0 tensorflow_probability==0.13.0
           python -m pip install git+https://github.com/DifferentiableUniverseInitiative/GalFlow.git
           python -m pip install -e .
       - name: test
