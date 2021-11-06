@@ -8,14 +8,20 @@ def get_moment_ellipticities(images, scale, fwhm, **kwargs):
   Gets ellipticity estimates from gaussian moments of stamps.
   
   Args:
-    images: A bach of images Tensor
-    scale: pixel scale
-    fwhm: full width at half maximum of the gaussian filter
-    centre_x, centre_y: centre of the image, if ommited, the centre pixel of the stamp is used.
-    weights: an image containing the weights of the
+    images: tf.Tensor
+      A bach of images as a (batch_size,nx,ny) tf tensor.
+    scale: float
+      The pixel scale of the image in arcsec/pixel.
+    fwhm: float
+      The full width at half maximum of the gaussian filter in arcseconds
+    centre_x, centre_y: floats
+     Centre of the image in pixels, if ommited, the centre pixel of the stamp is used.
+    weights: tf.Tensor
+      An image containing the weights of the pixels. If ommited = tf.ones(nx,ny)
     
   Returns:
-    Gaussian-weighted moments: g1, g2 for the batch of images. according to the a+b/()
+    Ellipticities: tf.Tensor
+      A batch of ellipticities according to the |g| = (a - b)/(a + b) convention.
     
   """  
   
@@ -23,8 +29,12 @@ def get_moment_ellipticities(images, scale, fwhm, **kwargs):
   
   q1 = Q11 - Q22
   q2 = 2*Q12
-  T = Q11  + Q22 + 2*tf.math.sqrt(tf.math.abs(Q11*Q22-Q12*Q12))
-  result = tf.stack([q1/T, q2/T], axis=-1)[0]
+  T= Q11  + Q22 + 2*tf.math.sqrt(tf.math.abs(Q11*Q22-Q12*Q12)) # g convention 
+  
+  g1 = q1/T
+  g2 = q2/T
+  
+  result = tf.stack([g1,g2], axis=-1)[0]
    
   return result
 
@@ -34,12 +44,16 @@ def gaussian_moments(images, scale, fwhm, **kwargs):
   Gets gaussian moments of stamps.
   
   Args:
-    images: A bach of images Tensor
-    scale: pixel scale
-    fwhm: full width at half maximum of the gaussian filter
-    centre_x, centre_y: centre of the image, if ommited, the centre pixel of the stamp is used.
-    weights: an image containing the weights of the
-    
+    images: tf.Tensor
+      A bach of images as a (batch_size,nx,ny) tf tensor.
+    scale: float
+      The pixel scale of the image in arcsec/pixel.
+    fwhm: float
+      The full width at half maximum of the gaussian filter in arcseconds
+    centre_x, centre_y: floats
+     Centre of the image in pixels, if ommited, the centre pixel of the stamp is used.
+    weights: tf.Tensor
+      An image containing the weights of the pixels. If ommited = tf.ones(nx,ny)
   Returns:
     Gaussian-weighted moments: Q11, Q12 and Q22 for the batch of images.
     
@@ -63,6 +77,8 @@ def gaussian_moments(images, scale, fwhm, **kwargs):
   
   T = fwhm_to_T(fwhm)
   wt = create_gmix([0.,0.,0.,0.,T,1.],'gauss')
+  
+  #Q21=Q12
   Q11, Q12, Q22  = get_moments(wt,pixels)
      
   return Q11, Q12, Q22

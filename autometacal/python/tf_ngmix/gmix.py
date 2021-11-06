@@ -52,29 +52,33 @@ def g1g2_to_e1e2(g1, g2):
 def gmix_eval_pixel_tf(gmix, pixel):
   """
   evaluate a 2-d gaussian at the specified location
-  parameters
-  ----------
-  gauss2d: gauss2d structure:
-    0 ='p',
-    1 = 'row',
-    2 = 'col',
-    3 = 'irr',
-    4 = 'irc',
-    5 = 'icc',
-    6 = 'det',
-    7 = 'norm_set',
-    8 = 'drr',
-    9 = 'drc',
-    10 ='dcc',
-    11 ='norm',
-    12 ='pnorm'
-  pixel: struct with coords u, v
-    0 = u,
-    1 = v,
-    2 = area
-    3 = val
-    4 = ierr
-    5 = fdiff
+  Args:
+    gauss2d: tf.Tensor
+      gauss2d structure:
+      0 ='p',
+      1 = 'row',
+      2 = 'col',
+      3 = 'irr',
+      4 = 'irc',
+      5 = 'icc',
+      6 = 'det',
+      7 = 'norm_set',
+      8 = 'drr',
+      9 = 'drc',
+      10 ='dcc',
+      11 ='norm',
+      12 ='pnorm'
+    pixel: tf.Tensor
+      struct with coords u, v
+      0 = u,
+      1 = v,
+      2 = area
+      3 = val
+      4 = ierr
+      5 = fdiff
+  Returns:
+    model_val: tf.Tensor
+      (batch_size,nx*ny) evaluations of pixels at u,v positions
   """
   gmix = tf.expand_dims(tf.expand_dims(gmix,1),1)
   gmix = tf.expand_dims(gmix,1)
@@ -95,8 +99,17 @@ def gmix_eval_pixel_tf(gmix, pixel):
 ####################create gmixes ######################
 def create_gmix(pars,model):
   """
-  returns:
-    gauss2d: gauss2d structure:
+  Build a profile from a mixture of gaussians
+  
+  Args:
+    pars: list, np.array or Tensor
+      Model parameters
+    model: str
+      model name
+  
+  returns: tf.Tensor
+    mixture of gaussians containing (ngaussians,13):
+    structure:
     0 ='p',
     1 = 'row',
     2 = 'col',
@@ -113,12 +126,12 @@ def create_gmix(pars,model):
   """
   
   if model == 'gauss':
-    n_gauss = 1
+    n_gauss = [1]
     fvals =  _fvals_gauss
     pvals = _pvals_gauss
   
   if model == 'exp':
-    n_gauss = 6
+    n_gauss = [6]
     fvals = _fvals_exp
     pvals = _pvals_exp
 
@@ -142,7 +155,7 @@ def create_gmix(pars,model):
   gmix4 = T_i_2 * e2 #irc
   gmix5 = T_i_2 * (1 + e1) #icc
   gmix6 = gmix3 * gmix5 - gmix4  * gmix4 #det
-  gmix7 = tf.ones([n_gauss])  
+  gmix7 = tf.ones(n_gauss)  
   #set norms
   gmix8 = gmix3 / gmix6 #drr
   gmix9 = gmix4 / gmix6 #drc

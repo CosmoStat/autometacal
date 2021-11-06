@@ -23,28 +23,22 @@ def test_tf_ngmix():
   weight_fwhm = scale*stamp_size/2 # <- this sets everything for the window function
   results_ngmix=[]
   
-  #ngmix version  
+  # ngmix version  
   fitter = ngmix.gaussmom.GaussMom(fwhm=weight_fwhm)
   for gal in gals:
     obs = ngmix.Observation(gal.numpy(),jacobian=ngmix.DiagonalJacobian(row=stamp_size//2, 
                                                                         col=stamp_size//2, 
                                                                         scale=scale))
-    results_ngmix.append(fitter._measure_moments(obs)['e'])
+    e = fitter._measure_moments(obs)['e']
+    results_ngmix.append(np.array(ngmix.shape.e1e2_to_g1g2(e[0],e[1])))
 
   results_ngmix = np.array(results_ngmix)
   
-  #our version:
-  pix_weights = tf.ones([Ngals,stamp_size,stamp_size])
-  pixels = autometacal.tf_ngmix.make_pixels(
-    gals, 
-    pix_weights, 
-    [stamp_size//2,stamp_size//2],
-    .2
-  )
-  T = autometacal.tf_ngmix.fwhm_to_T(weight_fwhm)
-  weights = autometacal.tf_ngmix.create_gmix([0.,0.,0.,0.,T,1.],'gauss')
-  result_tf_ngmix = autometacal.tf_ngmix.get_moments(weights,pixels)
-  
+  # our version:
+  @tf.function
+  def get_ellipticity(im):
+    return autometacal.get_moment_ellipticities(im, scale=0.2, fwhm=weight_fwhm)
+  result_tf_ngmix = get_ellipticity(gals)
   assert_allclose(results_ngmix,result_tf_ngmix,rtol=1e-6,atol=1e-6)
 
 if __name__=='__main__':

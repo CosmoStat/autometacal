@@ -13,9 +13,20 @@ from .gmix import gmix_eval_pixel_tf
   
 def get_moments(weights, pixels):
   """
-  do sums for calculating the weighted moments
-  weight: a gaussian mixture
-  pixels: a set of pixels in the uv plane
+  Get gaussian-weighted moments from a ngmix-like pixel structure 
+  (1d array of pixels = (u,v, pixel area, pixel value, pixel weights))
+  
+  Args:
+    weights: tf.Tensor
+      (N,N) containing the gaussian profile to be used as weights
+    pixels: tf.Tensor
+      (batch_size,nx*ny,4) batch containing a flattened tensor of pixels with:
+      (u,v, pixel area, pixel value, pixel weights)
+  Returns:
+    Q11, Q12, Q22: tf.Tensors
+      (batch_size,1) for each, containing the moments from each image
+    
+  
   """
   
   w = gmix_eval_pixel_tf(weights, pixels)
@@ -24,9 +35,6 @@ def get_moments(weights, pixels):
   Q11 = tf.reduce_sum(w*pixels[...,3]*pixels[...,0]*pixels[...,0], axis=-1)/norm
   Q12 = tf.reduce_sum(w*pixels[...,3]*pixels[...,0]*pixels[...,1], axis=-1)/norm
   Q22 = tf.reduce_sum(w*pixels[...,3]*pixels[...,1]*pixels[...,1], axis=-1)/norm
-  Q21 = Q12
-
-
     
-  return Q11, Q12, Q22 
+  return Q11, Q12, Q22
   
