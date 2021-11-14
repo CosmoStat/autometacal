@@ -91,3 +91,29 @@ def get_metacal_response(gal_image,
   R = tape.batch_jacobian(e, g)
   return e, R
 
+def get_metacal_response_finitediff(gal_image,psf_image,reconv_psf_image,step,method):
+  """
+  Gets shear response as a finite difference operation, instead of automatic differentiation.
+  """
+  
+  img0s = generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[0,0]]) 
+  img1p = generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[step,0]]) 
+  img1m = generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[-step,0]]) 
+  img2p = generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[0,step]]) 
+  img2m = generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[0,-step]]) 
+  
+  g0s = method(img0s)
+  g1p = method(img1p)
+  g1m = method(img1m)
+  g2p = method(img2p)
+  g2m = method(img2m)
+  
+  d11 = (g1p[:,0]-g1m[:,0])/(2*step)
+  d21 = (g1p[:,1]-g1m[:,1])/(2*step) 
+  d12 = (g2p[:,0]-g2m[:,0])/(2*step)
+  d22 = (g2p[:,1]-g2m[:,1])/(2*step)
+ 
+  #the matrix is correct. The transposition will swap d12 with d21 across a batch correctly.
+  R = tf.transpose(tf.convert_to_tensor([[d11,d21],
+                [d12,d22]],dtype=tf.float32))
+  return g0s, R
