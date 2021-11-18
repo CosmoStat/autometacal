@@ -97,11 +97,20 @@ def main():
     def get_autometacal_shape(im, psf, rpsf):
         method = lambda x: autometacal.get_moment_ellipticities(x, scale=0.263, fwhm=weight_fwhm)
         return autometacal.get_metacal_response(im, psf, rpsf, method)
+   
+  
+      
+    def get_finitediff_shape(im, psf, rpsf):
+        method = lambda x: autometacal.get_moment_ellipticities(x, scale=0.263, fwhm=weight_fwhm)
+        return autometacal.get_metacal_response_finitediff(im, psf, rpsf,0.002, method)   
 
     dlist = []
     dlist_auto = []
     dlist_R_auto = []
-
+    
+    dlist_finite = []
+    dlist_R_finite = []
+ 
     for i in progress(args.ntrial, miniters=10):
 
         obs = make_data(rng=rng, noise=args.noise, shear=shear_true)
@@ -118,14 +127,22 @@ def main():
         rpsf = obsdict['noshear'].psf.image.reshape(1,45,45).astype('float32') 
         g, R = get_autometacal_shape(im, psf, rpsf)
         
+        g_finite, R_finite =  get_finitediff_shape(im, psf, rpsf)
+        
         dlist_auto.append(g)
         dlist_R_auto.append(R)
+        
+        dlist_finite.append(g_finite)
+        dlist_R_finite.append(R_finite)
 
     print()
 
     data = np.hstack(dlist)
     data_auto = np.vstack(dlist_auto)
     data_R_auto = np.vstack(dlist_R_auto)
+    
+    data_finite = np.vstack(dlist_finite)
+    data_R_finite = np.vstack(dlist_R_finite)
 
     w = select(data=data, shear_type='noshear')
     w_1p = select(data=data, shear_type='1p')
@@ -133,29 +150,39 @@ def main():
 
     g = data['g'][w].mean(axis=0)
     auto_g = data_auto.mean(axis=0)
+    finite_g = data_finite.mean(axis=0)
 
     gerr = data['g'][w].std(axis=0) / np.sqrt(w.size)
     auto_gerr = data_auto.std(axis=0) / np.sqrt(w.size)
-
+    finite_gerr = data_finite.std(axis=0) / np.sqrt(w.size)
+    
+    #ngmix
     g1_1p = data['g'][w_1p, 0].mean()
     g1_1m = data['g'][w_1m, 0].mean()
     R11 = (g1_1p - g1_1m)/0.02
+    
 
     auto_R = data_R_auto.mean(axis=0)
+    finite_R = data_R_finite.mean(axis=0)
 
     shear = g / R11
     auto_shear = auto_g / auto_R[0,0]
+    finite_shear = finite_g / finite_R[0,0]
 
     shear_err = gerr / R11
     auto_shear_err = auto_gerr / auto_R[0,0]
+    finite_shear_err = finite_gerr / finite_R[0,0]
 
     m = shear[0] / shear_true[0]-1
     auto_m = auto_shear[0] / shear_true[0]-1
+    finite_m = finite_shear[0] / shear_true[0] - 1
 
-    merr = shear_err[0]/shear_true[0]
-    auto_merr = auto_shear_err[0]/shear_true[0]
-
+    merr = shear_err[0] / shear_true[0]
+    auto_merr = auto_shear_err[0] / shear_true[0]
+    finite_merr = finite_shear_err[0] / shear_true[0]
+ 
     s2n = data['s2n'][w].mean()
+    
 
     print('S/N: %g' % s2n)
     print('-------------------')
@@ -168,7 +195,11 @@ def main():
     print('R11: %g' % auto_R[0,0])
     print('m: %g +/- %g (99.7%% conf)' % (auto_m, auto_merr*3))
     print('c: %g +/- %g (99.7%% conf)' % (auto_shear[1], auto_shear_err[1]*3))
-
+    
+    print('finitediff results:')
+    print('R11: %g' % finite_R[0,0])
+    print('m: %g +/- %g (99.7%% conf)' % (finite_m, finite_merr*3))
+    print('c: %g +/- %g (99.7%% conf)' % (finite_shear[1], finite_shear_err[1]*3))
 
 def select(data, shear_type):
     """
