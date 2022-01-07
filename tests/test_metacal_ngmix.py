@@ -230,7 +230,7 @@ def test_metacal_ngmix():
       scale=0.263, 
       fwhm=weight_fwhm
     )
-      return autometacal.get_metacal_response(im, psf, rpsf, method)
+    return autometacal.get_metacal_response(im, psf, rpsf, method)
 
 
 
