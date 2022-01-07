@@ -7,6 +7,7 @@ import numpy as np
 import ngmix
 import galsim
 import autometacal
+import tensorflow as tf
 
 from numpy.testing import assert_allclose
 
