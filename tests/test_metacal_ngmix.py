@@ -240,7 +240,7 @@ def test_metacal_ngmix():
         x, 
         scale=0.263, 
         fwhm=weight_fwhm)
-      return get_metacal_response_finitediff(im, psf, rpsf,0.01, method)
+      return autometacal.get_metacal_response_finitediff(im, psf, rpsf,0.01, method)
     
   dlist = []
   dlist_auto = []
