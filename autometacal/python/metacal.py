@@ -97,26 +97,36 @@ def get_metacal_response_finitediff(gal_image,psf_image,reconv_psf_image,step,me
   instead of automatic differentiation.
   """
   
-  img0s = autometacal.generate_mcal_image(gal_image,
-                                          psf_image,
-                                          reconv_psf_image,
-                                          [[0,0]]) 
-  img1p = autometacal.generate_mcal_image(gal_image,
-                                          psf_image,
-                                          reconv_psf_image,
-                                          [[step,0]]) 
-  img1m = autometacal.generate_mcal_image(gal_image,
-                                          psf_image,
-                                          reconv_psf_image,
-                                          [[-step,0]]) 
-  img2p = autometacal.generate_mcal_image(gal_image,
-                                          psf_image,
-                                          reconv_psf_image,
-                                          [[0,step]]) 
-  img2m = autometacal.generate_mcal_image(gal_image,
-                                          psf_image,
-                                          reconv_psf_image,
-                                          [[0,-step]]) 
+  img0s = generate_mcal_image(
+    gal_image,
+    psf_image,
+    reconv_psf_image,
+    [[0,0]]
+  ) 
+  img1p = generate_mcal_image(
+    gal_image,
+    psf_image,
+    reconv_psf_image,
+    [[step,0]]
+  ) 
+  img1m = generate_mcal_image(
+    gal_image,
+    psf_image,
+    reconv_psf_image,
+    [[-step,0]]
+  ) 
+  img2p = generate_mcal_image(
+    gal_image,
+    psf_image,
+    reconv_psf_image,
+    [[0,step]]
+  ) 
+  img2m = generate_mcal_image(
+    gal_image,
+    psf_image,
+    reconv_psf_image,
+    [[0,-step]]
+  ) 
   
   g0s = method(img0s)
   g1p = method(img1p)
