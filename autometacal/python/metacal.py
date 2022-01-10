@@ -93,14 +93,30 @@ def get_metacal_response(gal_image,
 
 def get_metacal_response_finitediff(gal_image,psf_image,reconv_psf_image,step,method):
   """
-  Gets shear response as a finite difference operation, instead of automatic differentiation.
+  Gets shear response as a finite difference operation, 
+  instead of automatic differentiation.
   """
   
-  img0s = generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[0,0]]) 
-  img1p = generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[step,0]]) 
-  img1m = generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[-step,0]]) 
-  img2p = generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[0,step]]) 
-  img2m = generate_mcal_image(gal_image,psf_image,reconv_psf_image,[[0,-step]]) 
+  img0s = autometacal.generate_mcal_image(gal_image,
+                                          psf_image,
+                                          reconv_psf_image,
+                                          [[0,0]]) 
+  img1p = autometacal.generate_mcal_image(gal_image,
+                                          psf_image,
+                                          reconv_psf_image,
+                                          [[step,0]]) 
+  img1m = autometacal.generate_mcal_image(gal_image,
+                                          psf_image,
+                                          reconv_psf_image,
+                                          [[-step,0]]) 
+  img2p = autometacal.generate_mcal_image(gal_image,
+                                          psf_image,
+                                          reconv_psf_image,
+                                          [[0,step]]) 
+  img2m = autometacal.generate_mcal_image(gal_image,
+                                          psf_image,
+                                          reconv_psf_image,
+                                          [[0,-step]]) 
   
   g0s = method(img0s)
   g1p = method(img1p)
@@ -108,12 +124,24 @@ def get_metacal_response_finitediff(gal_image,psf_image,reconv_psf_image,step,me
   g2p = method(img2p)
   g2m = method(img2m)
   
-  d11 = (g1p[:,0]-g1m[:,0])/(2*step)
-  d21 = (g1p[:,1]-g1m[:,1])/(2*step) 
-  d12 = (g2p[:,0]-g2m[:,0])/(2*step)
-  d22 = (g2p[:,1]-g2m[:,1])/(2*step)
+  R11 = (g1p[:,0]-g1m[:,0])/(2*step)
+  R21 = (g1p[:,1]-g1m[:,1])/(2*step) 
+  R12 = (g2p[:,0]-g2m[:,0])/(2*step)
+  R22 = (g2p[:,1]-g2m[:,1])/(2*step)
  
-  #the matrix is correct. The transposition will swap d12 with d21 across a batch correctly.
-  R = tf.transpose(tf.convert_to_tensor([[d11,d21],
-                [d12,d22]],dtype=tf.float32))
-  return g0s, R
+  #N. B.:The matrix is correct. 
+  #The transposition will swap R12 with R21 across a batch correctly.
+  R = tf.transpose(tf.convert_to_tensor(
+    [[R11,R21],
+     [R12,R22]],dtype=tf.float32)
+  )
+  
+  ellip_dict = {
+    'noshear':g0s,
+    '1p':g1p,
+    '1m':g1m,
+    '2p':g2p,
+    '2m':g2m,    
+  } 
+
+  return ellip_dict, R
