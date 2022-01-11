@@ -12,7 +12,7 @@ import tensorflow as tf
 from numpy.testing import assert_allclose
 
 args={'seed':31415,
-      'ntrial': 100000,
+      'ntrial': 1000,
       'noise': 1e-6,
       'psf': 'gauss',
       'shear_true' : [0.01, 0.00],
@@ -68,7 +68,7 @@ def make_struct(res, obs, shear_type):
     # the observation rather than averaging over epochs/bands
     data['Tpsf'] = obs.psf.meta['result']['T']
 
-    return data
+  return data
 
 def select(data, shear_type):
   """
@@ -259,21 +259,21 @@ def test_metacal_ngmix():
       st = make_struct(res=sres, obs=obsdict[stype], shear_type=stype)
       dlist.append(st)
 
-      # Same thing with autometacal
-      im = obs.image.reshape(1,45,45).astype('float32')
-      psf = obs.psf.image.reshape(1,45,45).astype('float32') 
-      rpsf =  obsdict['noshear'].psf.image.reshape(1,45,45).astype(
-        'float32'
-      ) 
-      g, R = get_autometacal_shape(im, psf, rpsf)
+    # Same thing with autometacal
+    im = obs.image.reshape(1,45,45).astype('float32')
+    psf = obs.psf.image.reshape(1,45,45).astype('float32') 
+    rpsf =  obsdict['noshear'].psf.image.reshape(1,45,45).astype(
+      'float32'
+    ) 
+    g, R = get_autometacal_shape(im, psf, rpsf)
 
-      g_finite, R_finite =  get_finitediff_shape(im, psf, rpsf)
+    g_finite, R_finite =  get_finitediff_shape(im, psf, rpsf)
 
-      dlist_auto.append(g)
-      dlist_R_auto.append(R)
+    dlist_auto.append(g)
+    dlist_R_auto.append(R)
 
-      dlist_finite.append(g_finite['noshear'])
-      dlist_R_finite.append(R_finite)
+    dlist_finite.append(g_finite['noshear'])
+    dlist_R_finite.append(R_finite)
       
   data = np.hstack(dlist)
   data_auto = np.vstack(dlist_auto)
