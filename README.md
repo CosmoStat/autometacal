@@ -1,4 +1,7 @@
 # autometacal
+
+[![CI](https://github.com/CosmoStat/autometacal/actions/workflows/main.yml/badge.svg)](https://github.com/CosmoStat/autometacal/actions/workflows/main.yml)
+
 Metacalibration and shape measurement by automatic differentiation
 
 Project led by [@andrevitorelli](https://github.com/andrevitorelli)
