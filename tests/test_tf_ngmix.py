@@ -30,7 +30,7 @@ def test_tf_ngmix():
                                                                         col=stamp_size//2, 
                                                                         scale=scale))
     e = fitter._measure_moments(obs)['e']
-    results_ngmix.append(np.array(ngmix.shape.e1e2_to_g1g2(e[0],e[1])))
+    results_ngmix.append(e)
 
   results_ngmix = np.array(results_ngmix)
   
