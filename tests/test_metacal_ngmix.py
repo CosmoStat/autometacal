@@ -112,7 +112,11 @@ def progress(total, miniters=1):
         last_print_n = num
   print(flush=True)
 
-  
+import pytest
+
+xfail = pytest.mark.xfail
+
+@xfail(reason="Fails because it needs the modified tensorflow_addons to work")
 def make_data(rng, noise, shear):
   """
   simulate an exponential object with moffat psf
