@@ -33,7 +33,10 @@ def facer(interpolant, warp_tf):
   
   return autodiff_jacobian[0,...,0,:], numdiff_jacobian
 
+import pytest
 
+xfail = pytest.mark.xfail
+@xfail(reason="Fails because it needs the modified tensorflow_addons to work")
 def test_interpolation_gradients():
   atol = 0.003 #taken from the bilinear case with half step warp.
   
