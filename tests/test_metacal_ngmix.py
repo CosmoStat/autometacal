@@ -112,11 +112,7 @@ def progress(total, miniters=1):
         last_print_n = num
   print(flush=True)
 
-import pytest
 
-xfail = pytest.mark.xfail
-
-@xfail(reason="Fails because it needs the modified tensorflow_addons to work")
 def make_data(rng, noise, shear):
   """
   simulate an exponential object with moffat psf
@@ -194,6 +190,11 @@ def make_data(rng, noise, shear):
 
   return obs
 
+import pytest
+
+xfail = pytest.mark.xfail
+
+@xfail(reason="Fails because it needs the modified tensorflow_addons to work")
 def test_metacal_ngmix():
   """
   This test generates a simple galaxy and measures the response matrix and
