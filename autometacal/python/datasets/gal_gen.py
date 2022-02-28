@@ -47,10 +47,10 @@ class GalGen(tfds.core.GeneratorBasedBuilder):
   """
 
   BUILDER_CONFIGS = [
-      GalGenConfig(name='small_stamp_100k', dataset_size=100000, stamp_size=50, pixel_scale=.2, flux=1e5),
-      GalGenConfig(name='large_stamp_100k', dataset_size=100000, stamp_size=100, pixel_scale=.2, flux=1e5),
-      GalGenConfig(name='small_stamp_100', dataset_size=100, stamp_size=50, pixel_scale=.2, flux=1e5),
-      GalGenConfig(name='large_stamp_100', dataset_size=100, stamp_size=100, pixel_scale=.2, flux=1e5)
+      GalGenConfig(name='small_stamp_100k', dataset_size=100000, stamp_size=51, pixel_scale=.2, flux=1e5),
+      GalGenConfig(name='large_stamp_100k', dataset_size=100000, stamp_size=101, pixel_scale=.2, flux=1e5),
+      GalGenConfig(name='small_stamp_100', dataset_size=100, stamp_size=51, pixel_scale=.2, flux=1e5),
+      GalGenConfig(name='large_stamp_100', dataset_size=100, stamp_size=101, pixel_scale=.2, flux=1e5)
    ]
 
   VERSION = tfds.core.Version('0.1.0')
