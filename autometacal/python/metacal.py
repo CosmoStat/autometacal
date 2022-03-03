@@ -4,6 +4,7 @@ from tensorflow.python.ops.gen_batch_ops import batch
 import galflow as gf
 import numpy as np
 
+@tf.function
 def generate_mcal_image(gal_images,
                         psf_images,
                         reconvolution_psf_image,
@@ -84,6 +85,7 @@ def generate_mcal_image(gal_images,
 
   return img[:,fact*nx:-fact*nx,fact*ny:-fact*ny]
 
+@tf.function
 def get_metacal_response(gal_images,
                          psf_images,
                          reconvolution_psf_image,
@@ -109,7 +111,7 @@ def get_metacal_response(gal_images,
   R = tape.batch_jacobian(e, g)
   return e, R
 
-
+@tf.function
 def get_metacal_response_finitediff(gal_image,psf_image,reconv_psf_image,step,method):
   """
   Gets shear response as a finite difference operation, 
