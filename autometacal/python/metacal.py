@@ -7,7 +7,8 @@ import numpy as np
 def generate_mcal_image(gal_images,
                         psf_images,
                         reconvolution_psf_image,
-                        g):
+                        g,
+                        padfactor=3):
   """ Generate a metacalibrated image given input and target PSFs.
   
   Args: 
@@ -35,7 +36,6 @@ def generate_mcal_image(gal_images,
   batch_size, nx, ny = gal_images.get_shape().as_list()  
       
   #add pads in real space
-  padfactor = 3 #total width of image after padding
   fact = (padfactor - 1)//2 #how many image sizes to one direction
   paddings = tf.constant([[0, 0,], [nx*fact, nx*fact], [ny*fact, ny*fact]])
     
