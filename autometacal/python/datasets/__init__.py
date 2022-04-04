@@ -1,4 +1,5 @@
-"""gal_gen dataset."""
+"""galaxy datasets"""
 
-from .gal_gen import GalGen
+from .galgen import GalGen
 from .CFIS import CFIS
+from .simple import Simple
