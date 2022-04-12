@@ -9,7 +9,7 @@ def generate_mcal_image(gal_images,
                         reconvolution_psf_image,
                         g,
                         padfactor=3,
-                       fixnoise=False):
+                       fixnoise=None):
   """ Generate a metacalibrated image given input and target PSFs.
   
   Args: 
@@ -85,12 +85,7 @@ def generate_mcal_image(gal_images,
   
   img=img[:,fact*nx:-fact*nx,fact*ny:-fact*ny]
   
-  if fixnoise:
-    mean = tf.reduce_mean(img,axis=0)
-    stddev = tf.reduce_std(img,axis=0)
-    noise_image = tf.random.normal(img.get_shape(),mean=mean,stddev=stddev)
-    noise_image = gf.shear(tf.expand_dims(noise_image,-1), g[...,0], g[...,1])[...,0]
-    noise_image = tf.image.rot90(noise_image)
+  if noise_image is not None:
     img += noise_image
 
   return img
