@@ -8,8 +8,7 @@ def generate_mcal_image(gal_images,
                         psf_images,
                         reconvolution_psf_image,
                         g,
-                        padfactor=3,
-                       fixnoise=None):
+                        padfactor=3):
   """ Generate a metacalibrated image given input and target PSFs.
   
   Args: 
@@ -84,16 +83,24 @@ def generate_mcal_image(gal_images,
   img = tf.math.real(tf.signal.fftshift(im_reconv))
   
   img=img[:,fact*nx:-fact*nx,fact*ny:-fact*ny]
-  
-  if noise_image is not None:
-    img += noise_image
 
   return img
+
+def generate_fixnoise(shape,psf_image,reconvolution_psf_image,g):
+  noise = tf.random.normal(shape)
+  rotnoise = tf.image.rot90(noise)
+  shearednoise = generate_mcal_image(rotnoise,
+                                     psf_image,
+                                     reconvolution_psf_image,g)
+  rotshearednoise = tf.image.rot90(noise,k=3)
+  return rotshearednoise
+  
+
 
 def get_metacal_response(gal_images,
                          psf_images,
                          reconvolution_psf_image,
-                         method):
+                         method, fixnoise=False):
   """
   Convenience function to compute the shear response
   """  
@@ -102,13 +109,23 @@ def get_metacal_response(gal_images,
   reconvolution_psf_image = tf.convert_to_tensor(reconvolution_psf_image, dtype=tf.float32)
   batch_size, _ , _ = gal_images.get_shape().as_list()
   g = tf.zeros([batch_size, 2])
+  mcal_noise_image = tf.zeros(gal_images.get_shape())
+  if fixnoise:
+    mcal_noise_image += generate_fixnoise(gal_images.get_shape(),
+                                          psf_images,
+                                          reconvolution_psf_image,
+                                          g
+                                         )
+  
   with tf.GradientTape() as tape:
     tape.watch(g)
     # Measure ellipticity under metacal
-    e = method(generate_mcal_image(gal_images,
+    mcal_image = generate_mcal_image(gal_images,
                                    psf_images,
                                    reconvolution_psf_image,
-                                   g))
+                                   g)
+    mcal_image += mcal_noise_image
+    e = method(mcal_image)
     
   # Compute response matrix
 
