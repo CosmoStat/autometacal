@@ -264,7 +264,7 @@ def test_metacal_ngmix():
       st = make_struct(res=sres, obs=obsdict[stype], shear_type=stype)
       dlist.append(st)
 
-    # Same thing with autometacal
+    # Same thing with autometacal   
     im = obs.image.reshape(1,45,45).astype('float32')
     psf = obs.psf.image.reshape(1,45,45).astype('float32') 
     rpsf =  obsdict['noshear'].psf.image.reshape(1,45,45).astype(

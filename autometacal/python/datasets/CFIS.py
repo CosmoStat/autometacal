@@ -23,9 +23,9 @@ class CFISConfig(tfds.core.BuilderConfig):
       pixel_scale: pixel scale of stamps in arcsec.
       **kwargs: keyword arguments forwarded to super.
     """
-    v1 = tfds.core.Version("0.0.1")
+    v1 = tfds.core.Version("0.5.0")
     super(CFISConfig, self).__init__(
-        description=("Galaxy stamps"),
+        description=("CFIS-like Galaxy stamps"),
         version=v1,
         **kwargs)
       
@@ -49,7 +49,7 @@ class CFIS(tfds.core.GeneratorBasedBuilder):
 
   VERSION = tfds.core.Version('0.0.1')
   RELEASE_NOTES = {
-      '0.0.1': 'Initial release.',
+      '0.5.0': 'Initial release.',
   }
   
   BUILDER_CONFIGS = [CFISConfig(name="parametric_1k", galaxy_type="parametric", data_set_size=1000),
@@ -68,12 +68,7 @@ class CFIS(tfds.core.GeneratorBasedBuilder):
           'psf': tfds.features.Tensor(shape=[self.builder_config.stamp_size,
                                                    self.builder_config.stamp_size],
                                         dtype=tf.float32),    
-          # 'gal_kimage': tfds.features.Tensor(shape=[2, self.builder_config.kstamp_size,
-          #                                             self.builder_config.kstamp_size],
-          #                               dtype=tf.float32),
-          # 'psf_kimage': tfds.features.Tensor(shape=[2, self.builder_config.kstamp_size,
-          #                                             self.builder_config.kstamp_size],
-          #                               dtype=tf.float32),
+
           "noise_std": tfds.features.Tensor(shape=[1], dtype=tf.float32),
           "mag": tfds.features.Tensor(shape=[1], dtype=tf.float32),                                   
 	      }),
@@ -109,9 +104,6 @@ class CFIS(tfds.core.GeneratorBasedBuilder):
     psf = gs.Kolmogorov(fwhm=self.builder_config.psf_fwhm, flux=1.0)
     psf = psf.shear(g1=self.builder_config.psf_e1, g2=self.builder_config.psf_e2)
 
-    # Prepare borders for kimage
-    Nk = self.builder_config.kstamp_size
-    bounds = gs._BoundsI(-Nk//2, Nk//2-1, -Nk//2, Nk//2-1)
 
     for i in range(size):
       # retrieving galaxy and magnitude
@@ -134,17 +126,7 @@ class CFIS(tfds.core.GeneratorBasedBuilder):
                                 scale=self.builder_config.pixel_scale
                                 ).array.astype('float32')
 
-      # gal_kimage = gal.drawKImage(bounds=bounds, 
-      #                             scale=2.*np.pi/(self.builder_config.stamp_size*self.builder_config.pixel_scale), 
-      #                             recenter=False).array.astype('complex64')
-
-      # psf_kimage = psf.drawKImage(bounds=bounds, 
-      #                             scale=2.*np.pi/(self.builder_config.stamp_size*self.builder_config.pixel_scale), 
-      #                             recenter=False).array.astype('complex64')   
-
       yield '%d'%i, {"obs": gal_stamp, 
                      "psf": psf_stamp, 
-                    #  "gal_kimage": np.stack([gal_kimage.real, gal_kimage.imag]),
-                    #  "psf_kimage": np.stack([psf_kimage.real, psf_kimage.imag]),
                      "noise_std": np.array([np.sqrt(sky_level)]).astype('float32'), 
                      "mag": np.array([gal_mag]).astype('float32')}
