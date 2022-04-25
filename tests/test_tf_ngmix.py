@@ -94,6 +94,7 @@ def test_tf_ngmix():
   This test generates a simple galaxy and measure moments with ngmix, vs.
   tf_ngmix.
   """
+  scale = 0.263
   imlist = []
   results_ngmix=[]
   rng =np.random.RandomState(31415)
@@ -121,7 +122,7 @@ def test_tf_ngmix():
   # our version:
   @tf.function
   def get_ellipticity(im):
-    return autometacal.get_moment_ellipticities(im, scale=0.263, fwhm=1.2)
+    return autometacal.get_moment_ellipticities(im, scale=scale, fwhm=1.2)
   result_tf_ngmix = get_ellipticity(gals)
   assert_allclose(results_ngmix,result_tf_ngmix,rtol=1e-6,atol=1e-6)
 
