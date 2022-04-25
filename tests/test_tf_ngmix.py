@@ -6,7 +6,7 @@ import ngmix
 import numpy as np
 import tensorflow as tf
 import galsim
-scale = .2
+
 stamp_size=51
 Ngals = 1000
 
