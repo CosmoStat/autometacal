@@ -4,11 +4,9 @@ import tensorflow as tf
 import numpy as np
 import galsim as gs
 
-_CITATION = """
-"""
-
-_DESCRIPTION = """
-"""
+_CITATION = """{NEEDED}"""
+_URL = "https://github.com/CosmoStat/autometacal"
+_DESCRIPTION = """Noiseless CFHT-pixel galaxies with shapes from COSMOS"""
 
 class CFISConfig(tfds.core.BuilderConfig):
   """BuilderConfig for CFIS Galaxies."""
@@ -49,11 +47,20 @@ class CFIS(tfds.core.GeneratorBasedBuilder):
 
   VERSION = tfds.core.Version('0.0.1')
   RELEASE_NOTES = {
-      '0.0.1': 'Initial release.',
+      '0.0.1': 'pre alpha release.',
   }
   
-  BUILDER_CONFIGS = [CFISConfig(name="parametric_1k", galaxy_type="parametric", data_set_size=1000),
-                     CFISConfig(name="parametric_shear_1k", galaxy_type="parametric", data_set_size=1000, shear_g1=0.02)]
+  BUILDER_CONFIGS = [
+    CFISConfig(
+      name="parametric_1k", 
+      galaxy_type="parametric", 
+      data_set_size=81499),
+    CFISConfig(
+      name="parametric_shear_1k",
+      galaxy_type="parametric",
+      data_set_size=81499,
+      shear_g1=0.02)
+  ]
 
   def _info(self) -> tfds.core.DatasetInfo:
     """Returns the dataset metadata."""
@@ -62,26 +69,18 @@ class CFIS(tfds.core.GeneratorBasedBuilder):
         builder=self,
         description=_DESCRIPTION,
         features=tfds.features.FeaturesDict({
-          'obs': tfds.features.Tensor(shape=[self.builder_config.stamp_size,
-                                                   self.builder_config.stamp_size],
-                                        dtype=tf.float32),
-          'psf': tfds.features.Tensor(shape=[self.builder_config.stamp_size,
-                                                   self.builder_config.stamp_size],
-                                        dtype=tf.float32),    
-          # 'gal_kimage': tfds.features.Tensor(shape=[2, self.builder_config.kstamp_size,
-          #                                             self.builder_config.kstamp_size],
-          #                               dtype=tf.float32),
-          # 'psf_kimage': tfds.features.Tensor(shape=[2, self.builder_config.kstamp_size,
-          #                                             self.builder_config.kstamp_size],
-          #                               dtype=tf.float32),
+          'gal_image': tfds.features.Tensor(
+            shape=[self.builder_config.stamp_size, self.builder_config.stamp_size],
+            dtype=tf.float32
+          ),
+          'psf_image': tfds.features.Tensor(
+            shape=[self.builder_config.stamp_size, self.builder_config.stamp_size],
+            dtype=tf.float32),    
           "noise_std": tfds.features.Tensor(shape=[1], dtype=tf.float32),
           "mag": tfds.features.Tensor(shape=[1], dtype=tf.float32),                                   
 	      }),
-        # If there's a common (input, target) tuple from the
-        # features, specify them here. They'll be used if
-        # `as_supervised=True` in `builder.as_dataset`.
         supervised_keys=("obs", "obs"),
-        homepage='https://dataset-homepage/',
+        homepage=_URL,
         citation=_CITATION,
     )
 
@@ -104,47 +103,35 @@ class CFIS(tfds.core.GeneratorBasedBuilder):
     """Yields examples."""
     # Loads the galsim COSMOS catalog
     cat = gs.COSMOSCatalog(sample="25.2")
-    mag_zp = 32
-    sky_level = 400 # ADU (~variance)
     psf = gs.Kolmogorov(fwhm=self.builder_config.psf_fwhm, flux=1.0)
-    psf = psf.shear(g1=self.builder_config.psf_e1, g2=self.builder_config.psf_e2)
-
-    # Prepare borders for kimage
-    Nk = self.builder_config.kstamp_size
-    bounds = gs._BoundsI(-Nk//2, Nk//2-1, -Nk//2, Nk//2-1)
 
     for i in range(size):
       # retrieving galaxy and magnitude
       gal = cat.makeGalaxy(i, gal_type='parametric')
       gal_mag = cat.param_cat['mag_auto'][cat.orig_index[i]]
+      sky_level = 400
+      mag_zp = 32.
       gal_flux = 10**(-(gal_mag-mag_zp)/2.5)
       
       gal = gal.withFlux(gal_flux)
       gal = gal.shear(g1=self.builder_config.shear_g1, g2=self.builder_config.shear_g2)
 
       gal_conv = gs.Convolve(gal, psf)
-      
+      method="auto"
       gal_stamp = gal_conv.drawImage(nx=self.builder_config.stamp_size, 
                                      ny=self.builder_config.stamp_size, 
-                                     scale=self.builder_config.pixel_scale
+                                     scale=self.builder_config.pixel_scale,
+                                     method=method
                                      ).array.astype('float32')
                                           
       psf_stamp = psf.drawImage(nx=self.builder_config.stamp_size, 
                                 ny=self.builder_config.stamp_size, 
-                                scale=self.builder_config.pixel_scale
+                                scale=self.builder_config.pixel_scale,
+                                method=method
                                 ).array.astype('float32')
 
-      # gal_kimage = gal.drawKImage(bounds=bounds, 
-      #                             scale=2.*np.pi/(self.builder_config.stamp_size*self.builder_config.pixel_scale), 
-      #                             recenter=False).array.astype('complex64')
 
-      # psf_kimage = psf.drawKImage(bounds=bounds, 
-      #                             scale=2.*np.pi/(self.builder_config.stamp_size*self.builder_config.pixel_scale), 
-      #                             recenter=False).array.astype('complex64')   
-
-      yield '%d'%i, {"obs": gal_stamp, 
-                     "psf": psf_stamp, 
-                    #  "gal_kimage": np.stack([gal_kimage.real, gal_kimage.imag]),
-                    #  "psf_kimage": np.stack([psf_kimage.real, psf_kimage.imag]),
+      yield '%d'%i, {"gal_image": gal_stamp, 
+                     "psf_image": psf_stamp, 
                      "noise_std": np.array([np.sqrt(sky_level)]).astype('float32'), 
                      "mag": np.array([gal_mag]).astype('float32')}
