@@ -151,7 +151,7 @@ def generate_mcal_psf(psf_images, gp, padfactor=5):
   mask = tf.expand_dims(mask, axis=0)
   
   # Apply shear to the  kpsf image
-  krpsf_sheared = shear(tf.expand_dims(kpsf,-1), gp[...,0], gp[...,1])[...,0]    
+  krpsf_sheared = gf.shear(tf.expand_dims(kpsf,-1), gp[...,0], gp[...,1])[...,0]    
   
   # Reconvolve with target PSF
   im_reconv = tf.signal.ifft2d(tf.signal.ifftshift(krpsf_sheared * mask ))
