@@ -51,12 +51,11 @@ class Simple(tfds.core.GeneratorBasedBuilder):
       description=_DESCRIPTION,
       homepage=_URL,
       features=tfds.features.FeaturesDict({
-        'label': tfds.features.Tensor(shape=[2], dtype=tf.float32),
         'gal_model': tfds.features.Tensor(
           shape=[self.builder_config.stamp_size,self.builder_config.stamp_size],
           dtype=tf.float32
         ),
-        'obs': tfds.features.Tensor(
+        'obs_image': tfds.features.Tensor(
           shape=[self.builder_config.stamp_size,self.builder_config.stamp_size],
           dtype=tf.float32
         ),
@@ -64,12 +63,12 @@ class Simple(tfds.core.GeneratorBasedBuilder):
           shape=[self.builder_config.stamp_size, self.builder_config.stamp_size],
           dtype=tf.float32
         ),
-        'noise': tfds.features.Tensor(
+        'noise_image': tfds.features.Tensor(
           shape=[self.builder_config.stamp_size, self.builder_config.stamp_size],
           dtype=tf.float32
         ),
       }),
-    supervised_keys=("obs"),
+    supervised_keys=("obs","obs"),
     citation=_CITATION
   )
 
@@ -80,7 +79,7 @@ class Simple(tfds.core.GeneratorBasedBuilder):
       self.builder_config.stamp_size
     )}
 
-  def _generate_examples(self, dataset_size, stamp_size,g1,g2):
+  def _generate_examples(self, dataset_size, stamp_size):
     """Yields examples."""
     rng = np.random.RandomState(31415)
 
@@ -89,10 +88,10 @@ class Simple(tfds.core.GeneratorBasedBuilder):
       #generate example
       model, obs_img, psf_img, noise_img = make_data(rng,stamp_size=stamp_size)               
       yield '%d'%i, {'gal_model': model,   #noiseless PSFless galaxy model
-                     'obs': obs_img, #observed image
+                     'obs_image': obs_img, #observed image
                      'psf_image': psf_img, #psf image 
-                     'noise' : noise_img,
-                     'label': np.array([g1,g2],dtype='float32')}
+                     'noise_image' : noise_img,
+                     }
 
 def make_data(rng,stamp_size = 51):
   """Simple exponetial profile toy model galaxy"""
