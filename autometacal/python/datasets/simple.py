@@ -12,8 +12,7 @@ _URL = "https://github.com/CosmoStat/autometacal"
 class SimpleConfig(tfds.core.BuilderConfig):
   """BuilderConfig for GalGen."""
 
-  def __init__(self, *,dataset_size, stamp_size,
-                ,**kwargs):
+  def __init__(self, *,dataset_size, stamp_size,**kwargs):
     """BuilderConfig for Simple.
     Args:
       dataset_size: number of stamps
