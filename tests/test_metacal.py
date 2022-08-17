@@ -86,8 +86,8 @@ def make_data(rng, noise, shear):
 
 args={'seed':31415,
       'ntrial':1000,
-      'noise': 1e-5,
-      'psf': 'gauss'}
+      'noise': 1e-6
+     }
 shear_true = [0.0, 0.00]
 rng = np.random.RandomState(args['seed'])
 
@@ -104,11 +104,11 @@ def test_get_metacal(return_results=False):
   runner = ngmix.runners.Runner(fitter=fitter)
 
   boot = ngmix.metacal.MetacalBootstrapper(
-    runner=runner, psf_runner=psf_runner,
+    runner=runner,
+    psf_runner=psf_runner,
     rng=rng,
-    psf=args['psf'],
-    step=0.01,
-    fixnoise=False
+    psf='dilate',
+    types=['noshear', '1p', '1m', '2p', '2m', '1p_psf', '1m_psf', '2p_psf', '2m_psf'],
   )
   # Run metacal
   resdict, obsdict = boot.go(obs)
@@ -118,15 +118,29 @@ def test_get_metacal(return_results=False):
   psf = obs.psf.image.reshape(1,45,45).astype('float32') 
   rpsf = obsdict['noshear'].psf.image.reshape(1,45,45).astype('float32') 
 
-  mcal = autometacal.generate_mcal_image(im.repeat(3,0), 
-                                         psf.repeat(3,0), 
-                                         rpsf.repeat(3,0), 
-                                         np.array([[0,0],
-                                                   [0.01,0],
-                                                   [0,0.01]]).astype('float32'))
+  mcal = autometacal.generate_mcal_image(im.repeat(5,0), 
+                                         psf.repeat(5,0), 
+                                         rpsf.repeat(5,0), 
+                                         np.array([[0,0], #noshear
+                                                   [0.01,0],#1p
+                                                   [0,0.01],#2p
+                                                   [0,0],#1p_psf
+                                                   [0,0]#2p_psf
+                                                 
+                                                  ]).astype('float32'),
+                                         np.array([[0,0], #noshear
+                                                   [0,0],#1p
+                                                   [0,0],#2p
+                                                   [0.01,0],#1p_psf
+                                                   [0,0.01]#2p_psf
+                                                 
+                                                  ]).astype('float32'),
+                                        )
   if return_results:
     return obsdict, mcal
   else:
     assert_allclose(mcal[0], obsdict['noshear'].image, atol=1e-5)
     assert_allclose(mcal[1], obsdict['1p'].image, atol=2e-5)
     assert_allclose(mcal[2], obsdict['2p'].image, atol=2e-5)
+    assert_allclose(mcal[3], obsdict['1p_psf'].image, atol=2e-5)
+    assert_allclose(mcal[4], obsdict['2p_psf'].image, atol=2e-5)
